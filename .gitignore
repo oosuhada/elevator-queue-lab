@@ -8,4 +8,5 @@ coverage/
 Thumbs.db
 *.log
 experiment-*.json
+trace-*.json
 

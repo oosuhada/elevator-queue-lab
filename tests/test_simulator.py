@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from app.simulator import ElevatorSimulation
+from app.trace import PassengerTrace, generate_trace
 
 
 class SimulationTests(unittest.TestCase):
@@ -25,6 +26,23 @@ class SimulationTests(unittest.TestCase):
         first = ElevatorSimulation("evening", "queue_aware", seed=42).run(300)
         second = ElevatorSimulation("evening", "queue_aware", seed=42).run(300)
         self.assertEqual(first, second)
+
+    def test_passenger_trace_is_byte_deterministic_and_round_trips(self) -> None:
+        first = generate_trace("evening", 300, seed=42)
+        second = generate_trace("evening", 300, seed=42)
+        self.assertEqual(first.to_json().encode("utf-8"), second.to_json().encode("utf-8"))
+        self.assertEqual(first.digest, second.digest)
+        restored = PassengerTrace.from_json(first.to_json())
+        self.assertEqual(first, restored)
+
+    def test_trace_driven_run_reconciles_passenger_lifecycle_and_events(self) -> None:
+        trace = generate_trace("morning", 300, seed=17)
+        simulation = ElevatorSimulation("morning", "collective", seed=999, trace=trace)
+        simulation.run(300)
+        audit = simulation.audit()
+        self.assertTrue(audit["ok"], audit)
+        self.assertEqual(len(trace.events), audit["arrivals"])
+        self.assertEqual(audit["arrivals"], audit["event_counts"]["arrival"])
 
     def test_rush_hour_produces_passenger_metrics(self) -> None:
         metrics = ElevatorSimulation("morning", "collective", seed=9).run(300)

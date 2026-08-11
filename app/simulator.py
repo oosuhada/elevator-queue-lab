@@ -6,7 +6,9 @@ from collections import defaultdict
 
 from .demand import DemandModel
 from .domain import Elevator, HallCall, Metrics, Passenger, SimulationConfig
+from .events import EventLedger
 from .policies import DispatchPolicy, QueueWeights, build_policy
+from .trace import PassengerTrace
 
 
 class ElevatorSimulation:
@@ -17,12 +19,17 @@ class ElevatorSimulation:
         seed: int = 7,
         weights: QueueWeights | None = None,
         config: SimulationConfig | None = None,
+        trace: PassengerTrace | None = None,
     ) -> None:
         self.config = config or SimulationConfig()
         self.scenario = scenario
         self.seed = seed
         self.random = random.Random(seed + 1000)
         self.demand = DemandModel(scenario, seed)
+        if trace is not None and trace.scenario != scenario:
+            raise ValueError("Passenger trace scenario must match simulation scenario")
+        self.trace = trace
+        self._trace_index = 0
         self.policy_name = policy_name
         self.policy: DispatchPolicy = build_policy(policy_name, weights)
         self.sim_time = 0.0
@@ -31,6 +38,7 @@ class ElevatorSimulation:
         self.waiting: list[Passenger] = []
         self.hall_calls: dict[tuple[int, int, str], HallCall] = {}
         self.metrics = Metrics()
+        self.ledger = EventLedger()
         self.elevators = self._make_elevators()
         self.history: list[dict[str, float | int]] = []
 
@@ -79,26 +87,49 @@ class ElevatorSimulation:
         return self.metrics.snapshot(self.sim_time)
 
     def _generate_demand(self) -> None:
+        if self.trace is not None:
+            now = int(self.sim_time)
+            while self._trace_index < len(self.trace.events):
+                event = self.trace.events[self._trace_index]
+                if event.at > now:
+                    break
+                if event.at == now:
+                    self._create_passenger(event.passenger_id, event.origin, event.destination)
+                self._trace_index += 1
+            return
+
         for _ in range(self.demand.arrivals_this_second()):
             origin, destination = self.demand.trip()
-            passenger = Passenger(
-                passenger_id=self.next_passenger_id,
-                origin=origin,
-                destination=destination,
+            self._create_passenger(self.next_passenger_id, origin, destination)
+            self.next_passenger_id += 1
+
+    def _create_passenger(self, passenger_id: int, origin: int, destination: int) -> None:
+        passenger = Passenger(
+            passenger_id=passenger_id,
+            origin=origin,
+            destination=destination,
+            created_at=self.sim_time,
+        )
+        self.next_passenger_id = max(self.next_passenger_id, passenger_id + 1)
+        self.waiting.append(passenger)
+        self.metrics.arrival_count += 1
+        bank = self._bank_for_trip(origin, destination)
+        self.ledger.record(
+            self.sim_time,
+            "arrival",
+            passenger_id=passenger_id,
+            floor=origin,
+            bank=bank,
+            details={"destination": destination},
+        )
+        key = (origin, passenger.direction, bank)
+        if key not in self.hall_calls:
+            self.hall_calls[key] = HallCall(
+                floor=origin,
+                direction=passenger.direction,
+                bank=bank,
                 created_at=self.sim_time,
             )
-            self.next_passenger_id += 1
-            self.waiting.append(passenger)
-            self.metrics.arrival_count += 1
-            bank = self._bank_for_trip(origin, destination)
-            key = (origin, passenger.direction, bank)
-            if key not in self.hall_calls:
-                self.hall_calls[key] = HallCall(
-                    floor=origin,
-                    direction=passenger.direction,
-                    bank=bank,
-                    created_at=self.sim_time,
-                )
 
     def _dispatch_calls(self) -> None:
         for key, call in list(self.hall_calls.items()):
@@ -112,8 +143,23 @@ class ElevatorSimulation:
             chosen = self.policy.choose(call, candidates)
             if chosen is None:
                 continue
+            prior = call.last_assigned_elevator
             call.assigned_elevator = chosen.elevator_id
+            call.last_assigned_elevator = chosen.elevator_id
             chosen.add_stop(call.floor)
+            event_kind = "reassign" if prior is not None and prior != chosen.elevator_id else "assign"
+            self.ledger.record(
+                self.sim_time,
+                event_kind,
+                elevator_id=chosen.elevator_id,
+                floor=call.floor,
+                bank=call.bank,
+                details={
+                    "direction": call.direction,
+                    "previous_elevator": prior,
+                    "missed_count": call.missed_count,
+                },
+            )
 
     def _trip_compatible_candidates(self, key: tuple[int, int, str]) -> list[Elevator]:
         floor, direction, bank = key
@@ -176,6 +222,14 @@ class ElevatorSimulation:
                 self.metrics.served_count += 1
                 if passenger.boarded_at is not None:
                     self.metrics.ride_times.append(self.sim_time - passenger.boarded_at)
+                self.ledger.record(
+                    self.sim_time,
+                    "alight",
+                    passenger_id=passenger.passenger_id,
+                    elevator_id=elevator.elevator_id,
+                    floor=floor,
+                    bank=elevator.bank,
+                )
             else:
                 remaining_onboard.append(passenger)
         elevator.onboard = remaining_onboard
@@ -204,6 +258,15 @@ class ElevatorSimulation:
                 elevator.add_stop(passenger.destination)
                 available -= 1
                 boarded_any = True
+                self.ledger.record(
+                    self.sim_time,
+                    "board",
+                    passenger_id=passenger.passenger_id,
+                    elevator_id=elevator.elevator_id,
+                    floor=floor,
+                    bank=elevator.bank,
+                    details={"destination": passenger.destination},
+                )
             else:
                 if passenger.origin == floor and assigned_here and available <= 0:
                     blocked_calls.add(key)
@@ -216,6 +279,14 @@ class ElevatorSimulation:
                 continue
             call.missed_count += 1
             self.metrics.missed_capacity += 1
+            self.ledger.record(
+                self.sim_time,
+                "full_pass",
+                elevator_id=elevator.elevator_id,
+                floor=call.floor,
+                bank=call.bank,
+                details={"direction": call.direction, "missed_count": call.missed_count},
+            )
             call.assigned_elevator = None
             if not self.policy.immediate_reassignment:
                 call.blocked_until = self.sim_time + 8.0
@@ -276,6 +347,13 @@ class ElevatorSimulation:
             return
         if abs(elevator.floor - target) >= 1.0:
             elevator.add_stop(target)
+            self.ledger.record(
+                self.sim_time,
+                "parking_move",
+                elevator_id=elevator.elevator_id,
+                floor=target,
+                bank=elevator.bank,
+            )
 
     def _expire_sticky_blocks(self) -> None:
         for call in self.hall_calls.values():
@@ -294,6 +372,37 @@ class ElevatorSimulation:
     def _bank_for_trip(self, origin: int, destination: int) -> str:
         non_lobby_floor = destination if origin == 1 else origin
         return "low" if non_lobby_floor <= self.config.low_zone_max else "high"
+
+    def audit(self) -> dict[str, object]:
+        event_counts = self.ledger.counts()
+        onboard = sum(len(elevator.onboard) for elevator in self.elevators)
+        waiting = len(self.waiting)
+        arrived = self.metrics.arrival_count
+        served = self.metrics.served_count
+        boarded = len(self.metrics.wait_times)
+        violations: list[str] = []
+        if arrived != waiting + onboard + served:
+            violations.append("passenger_conservation")
+        if boarded != onboard + served:
+            violations.append("boarded_conservation")
+        if event_counts.get("arrival", 0) != arrived:
+            violations.append("arrival_event_count")
+        if event_counts.get("board", 0) != boarded:
+            violations.append("board_event_count")
+        if event_counts.get("alight", 0) != served:
+            violations.append("alight_event_count")
+        if any(len(elevator.onboard) > elevator.capacity for elevator in self.elevators):
+            violations.append("capacity_overflow")
+        return {
+            "ok": not violations,
+            "violations": violations,
+            "arrivals": arrived,
+            "waiting": waiting,
+            "onboard": onboard,
+            "served": served,
+            "boarded": boarded,
+            "event_counts": event_counts,
+        }
 
     def snapshot(self) -> dict[str, object]:
         floor_queues: dict[int, dict[str, int]] = defaultdict(lambda: {"up": 0, "down": 0})
@@ -340,5 +449,8 @@ class ElevatorSimulation:
                 for call in self.hall_calls.values()
             ],
             "history": list(self.history),
+            "audit": self.audit(),
+            "event_tail": self.ledger.tail(),
+            "trace_digest": self.trace.digest if self.trace is not None else None,
         }
 

@@ -49,6 +49,7 @@ Run validation:
 
 ```bash
 python -m unittest discover -s tests -v
+python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3
 ```
 

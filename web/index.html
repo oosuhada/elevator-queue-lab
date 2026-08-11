@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Live elevator group-control and queueing theory research lab" />
+    <title>Elevator Queue Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">OPERATIONS RESEARCH · GROUP CONTROL</div>
+          <h1>Elevator Queue Lab</h1>
+          <p>18 floors · 6 cars · passenger-level dispatch simulation</p>
+        </div>
+        <div class="clock-block">
+          <div id="live-state" class="live-state"><i></i> LIVE SIMULATION</div>
+          <strong id="clock">08:00:00</strong>
+          <span id="elapsed">T+00:00</span>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label>
+          <span>Traffic regime</span>
+          <select id="scenario">
+            <option value="morning">Morning up-peak</option>
+            <option value="lunch">Lunch mixed</option>
+            <option value="normal">Normal mixed</option>
+            <option value="evening">Evening down-peak</option>
+          </select>
+        </label>
+        <label>
+          <span>Dispatch policy</span>
+          <select id="policy">
+            <option value="legacy_sticky">Legacy sticky</option>
+            <option value="collective">Collective control</option>
+            <option value="queue_aware" selected>Queue-aware</option>
+          </select>
+        </label>
+        <label>
+          <span>Speed</span>
+          <select id="speed">
+            <option value="1">1×</option>
+            <option value="5">5×</option>
+            <option value="20" selected>20×</option>
+            <option value="60">60×</option>
+            <option value="120">120×</option>
+          </select>
+        </label>
+        <div class="control-actions">
+          <button id="pause" class="button ghost">Pause</button>
+          <button id="reset" class="button primary">Reset run</button>
+        </div>
+      </section>
+
+      <main class="layout">
+        <section class="panel building-panel">
+          <div class="panel-title">
+            <div>
+              <span class="kicker">BUILDING DIGITAL TWIN</span>
+              <h2>Passenger flow & car state</h2>
+            </div>
+            <div class="legend">
+              <span><i class="low"></i>Low bank 1–9F</span>
+              <span><i class="high"></i>High bank 1, 10–18F</span>
+            </div>
+          </div>
+
+          <div id="building" class="building" aria-label="18 floor elevator building">
+            <div class="floor-labels" id="floor-labels"></div>
+            <div class="floors" id="floors"></div>
+            <div class="shafts" id="shafts"></div>
+          </div>
+
+          <div class="calls-area">
+            <span class="kicker">ACTIVE HALL CALLS</span>
+            <div id="calls" class="calls"><span class="muted">Waiting for passenger calls…</span></div>
+          </div>
+        </section>
+
+        <aside class="right-column">
+          <section class="metric-grid">
+            <article class="metric hero">
+              <span>Average wait · Wq</span>
+              <strong id="avg-wait">0.0s</strong>
+              <small>Cumulative boarded passengers</small>
+            </article>
+            <article class="metric">
+              <span>P95 wait</span>
+              <strong id="p95-wait">0.0s</strong>
+              <small>Tail service quality</small>
+            </article>
+            <article class="metric">
+              <span>Current queue</span>
+              <strong id="queue">0</strong>
+              <small id="avg-queue">Lq avg 0.0</small>
+            </article>
+            <article class="metric">
+              <span>Full-car misses</span>
+              <strong id="misses">0</strong>
+              <small>Pickup demand left behind</small>
+            </article>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="panel-title compact">
+              <div>
+                <span class="kicker">SERVICE QUALITY</span>
+                <h3>Wait time over the run</h3>
+              </div>
+              <span id="served" class="tag">0 served</span>
+            </div>
+            <canvas id="wait-chart" width="660" height="220"></canvas>
+            <div class="chart-key"><span><i class="avg"></i>Average</span><span><i class="p95"></i>P95</span></div>
+          </section>
+
+          <section class="panel theory-panel">
+            <div class="panel-title compact">
+              <div>
+                <span class="kicker">QUEUEING DIAGNOSTIC</span>
+                <h3>Little’s Law check</h3>
+              </div>
+            </div>
+            <div class="equation">Lq ≈ λ · Wq</div>
+            <div class="theory-values">
+              <div><span>Observed Lq</span><strong id="lq-observed">0.00</strong></div>
+              <div><span>λ · Wq</span><strong id="lq-derived">0.00</strong></div>
+              <div><span>Arrival rate</span><strong id="arrival-rate">0/min</strong></div>
+            </div>
+            <p>This is a sanity diagnostic, not an M/M/c assumption. Elevator service is state- and route-dependent.</p>
+          </section>
+
+          <section class="panel research-panel">
+            <div class="panel-title compact">
+              <div>
+                <span class="kicker">CURRENT HYPOTHESIS</span>
+                <h3>Capacity-Aware Predictive Reassignment</h3>
+              </div>
+              <span class="tag accent">CAPR</span>
+            </div>
+            <p>Invalidate stale assignments before a failed pickup when the assigned car’s predicted residual capacity or route ETA becomes poor.</p>
+            <div class="research-steps">
+              <span>ETA</span><b>+</b><span>load</span><b>+</b><span>route</span><b>+</b><span>call age</span><b>+</b><span>demand forecast</span>
+            </div>
+            <small class="muted">Queue-aware is the current executable precursor. CAPR and the learned controller are roadmap milestones.</small>
+          </section>
+        </aside>
+      </main>
+
+      <footer>
+        <span>All displayed values are produced by the simulator API.</span>
+        <span>Seeded experiment foundation · portfolio research project</span>
+      </footer>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
+

@@ -17,11 +17,11 @@ passenger lifecycle counts.
 
 ## M1 — physically credible simulator
 
-- [ ] discrete-event clock with acceleration/deceleration and door phase model;
-- [ ] per-passenger boarding/alighting transfer time;
-- [ ] configurable capacities, floor heights, speed and bank topology;
-- [ ] abandonment/patience option kept off by default;
-- [ ] invariant/property tests for impossible trips, negative waits and capacity overflow.
+- [x] sub-second clock with acceleration/deceleration and door phase model;
+- [x] per-passenger boarding/alighting transfer time;
+- [x] configurable capacities, floor heights, speed and bank topology;
+- [x] abandonment/patience option kept off by default;
+- [x] invariant/property tests for impossible trips, negative waits and capacity overflow.
 
 **Gate:** simulation invariants pass 100 seeded stress runs.
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 
 @dataclass(slots=True)
@@ -42,12 +42,21 @@ class Elevator:
     direction: int = 0
     stops: list[int] = field(default_factory=list)
     onboard: list[Passenger] = field(default_factory=list)
-    door_timer: float = 0.0
     distance_travelled: float = 0.0
+    phase: str = "idle"
+    phase_timer: float = 0.0
+    target_floor: int | None = None
+    travel_start_floor: float | None = None
+    travel_elapsed: float = 0.0
+    travel_duration: float = 0.0
 
     @property
     def load_ratio(self) -> float:
         return len(self.onboard) / self.capacity
+
+    @property
+    def door_timer(self) -> float:
+        return self.phase_timer if self.phase.startswith("door_") else 0.0
 
     def can_serve_floor(self, floor: int) -> bool:
         if floor == 1:
@@ -71,8 +80,19 @@ class SimulationConfig:
     high_zone_min: int = 10
     elevators_per_bank: int = 3
     elevator_capacity: int = 14
-    travel_seconds_per_floor: float = 2.0
-    door_dwell_seconds: float = 3.0
+    floor_height_m: float = 3.6
+    max_speed_mps: float = 2.5
+    acceleration_mps2: float = 1.0
+    levelling_seconds: float = 0.5
+    door_open_seconds: float = 1.0
+    door_dwell_seconds: float = 1.5
+    door_close_seconds: float = 1.0
+    passenger_transfer_seconds: float = 0.45
+    time_step_seconds: float = 0.25
+    passenger_patience_seconds: float | None = None
+
+    def as_dict(self) -> dict[str, float | int | None]:
+        return asdict(self)
 
 
 @dataclass(slots=True)
@@ -83,6 +103,7 @@ class Metrics:
     arrival_count: int = 0
     served_count: int = 0
     missed_capacity: int = 0
+    abandoned_count: int = 0
 
     def snapshot(self, elapsed_seconds: float) -> dict[str, float | int]:
         waits = sorted(self.wait_times)
@@ -106,5 +127,6 @@ class Metrics:
             "served": self.served_count,
             "arrivals": self.arrival_count,
             "missed_capacity": self.missed_capacity,
+            "abandoned": self.abandoned_count,
         }
 

@@ -26,10 +26,11 @@ the same passenger trace/seed is evaluated by every policy to reduce comparison 
 
 ## 3. Car model
 
-The engine must eventually model configurable speed, acceleration, deceleration, door opening,
-dwell/closing, passenger transfer time and capacity. The current foundation uses simplified
-per-floor movement and fixed dwell and is therefore marked as a model limitation until the
-kinematic milestone lands.
+The engine models configurable floor height, maximum speed, symmetric acceleration/deceleration,
+door opening/dwell/closing, passenger transfer time and capacity at a 0.25 s default simulation
+step. Motion uses triangular or trapezoidal point-to-point profiles. It is still a research model:
+jerk limits, manufacturer-specific leveling curves, door obstruction behavior and measured drive
+energy are not yet represented and remain explicit limitations.
 
 ## 4. Controller baselines
 

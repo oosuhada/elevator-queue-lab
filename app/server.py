@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import mimetypes
 import threading
@@ -17,6 +18,9 @@ from .simulator import ElevatorSimulation
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web"
+M3_BASELINE = ROOT / "evidence" / "m3-regression-baseline.json"
+REPLAY_SCHEMA = "elevator-queue-lab.replay.v1"
+REPLAY_LIMIT = 600
 
 
 class SimulationRunner:
@@ -28,6 +32,10 @@ class SimulationRunner:
         self.policy = "capr"
         self.control_mode = "conventional"
         self.simulation = self._new_simulation()
+        self.replay_frames: list[dict[str, Any]] = []
+        self.saved_replay: dict[str, Any] | None = None
+        self._last_replay_second = -1
+        self._record_replay_frame(force=True)
         self.closed = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
@@ -44,15 +52,43 @@ class SimulationRunner:
             if self.running:
                 with self.lock:
                     self.simulation.step(1)
+                    self._record_replay_frame()
                 time.sleep(max(0.005, 1 / self.speed))
             else:
                 time.sleep(0.05)
+
+    def _compact_replay_frame(self) -> dict[str, Any]:
+        source = self.simulation.snapshot()
+        return {
+            "scenario": source["scenario"],
+            "policy": source["policy"],
+            "sim_time": source["sim_time"],
+            "clock": source["clock"],
+            "metrics": source["metrics"],
+            "elevators": source["elevators"],
+            "queues": source["queues"],
+            "calls": source["calls"],
+            "event_tail": source["event_tail"][-12:],
+            "decision_tail": source["decision_tail"][-4:],
+            "simulation_config": source["simulation_config"],
+        }
+
+    def _record_replay_frame(self, *, force: bool = False) -> None:
+        second = int(self.simulation.sim_time)
+        if not force and second == self._last_replay_second:
+            return
+        self._last_replay_second = second
+        self.replay_frames.append(self._compact_replay_frame())
+        if len(self.replay_frames) > REPLAY_LIMIT:
+            self.replay_frames = self.replay_frames[-REPLAY_LIMIT:]
 
     def snapshot(self) -> dict[str, Any]:
         with self.lock:
             result = self.simulation.snapshot()
             result["running"] = self.running
             result["speed"] = self.speed
+            result["replay_frames"] = len(self.replay_frames)
+            result["saved_replay_available"] = self.saved_replay is not None
             return result
 
     def control(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -76,6 +112,9 @@ class SimulationRunner:
                 self.policy = next_policy
                 self.control_mode = next_control_mode
                 self.simulation = self._new_simulation()
+                self.replay_frames = []
+                self._last_replay_second = -1
+                self._record_replay_frame(force=True)
             if action == "pause":
                 self.running = False
             elif action in {"start", "reset", "update"}:
@@ -83,7 +122,58 @@ class SimulationRunner:
             elif action == "step":
                 self.running = False
                 self.simulation.step(1)
+                self._record_replay_frame()
         return self.snapshot()
+
+    def replay(self) -> dict[str, Any]:
+        with self.lock:
+            if self.saved_replay is not None:
+                return copy.deepcopy(self.saved_replay)
+            return self._build_replay_payload(self.replay_frames, source="live_buffer")
+
+    def replay_control(self, payload: dict[str, Any]) -> dict[str, Any]:
+        action = str(payload.get("action", "save"))
+        with self.lock:
+            if action == "save":
+                self.saved_replay = self._build_replay_payload(
+                    copy.deepcopy(self.replay_frames),
+                    source="saved_run",
+                )
+            elif action == "clear":
+                self.saved_replay = None
+            else:
+                raise ValueError("replay action must be save or clear")
+            return self.replay()
+
+    def _build_replay_payload(
+        self,
+        frames: list[dict[str, Any]],
+        *,
+        source: str,
+    ) -> dict[str, Any]:
+        first = frames[0] if frames else self._compact_replay_frame()
+        last = frames[-1] if frames else first
+        return {
+            "schema": REPLAY_SCHEMA,
+            "source": source,
+            "scenario": first["scenario"],
+            "policy": first["policy"],
+            "control_mode": first["simulation_config"]["control_mode"],
+            "start_sim_time": first["sim_time"],
+            "end_sim_time": last["sim_time"],
+            "frame_count": len(frames),
+            "frames": frames,
+        }
+
+    def experiment(self) -> dict[str, Any]:
+        if not M3_BASELINE.is_file():
+            raise FileNotFoundError("M3 regression baseline is unavailable")
+        baseline = json.loads(M3_BASELINE.read_text(encoding="utf-8"))
+        return {
+            "schema": "elevator-queue-lab.experiment-ui.v1",
+            "source": "evidence/m3-regression-baseline.json",
+            "baseline": baseline,
+        }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -93,6 +183,16 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/snapshot":
             return self._send_json(self.runner.snapshot())
+        if parsed.path == "/api/replay":
+            return self._send_json(self.runner.replay())
+        if parsed.path == "/api/experiment":
+            try:
+                return self._send_json(self.runner.experiment())
+            except FileNotFoundError as exc:
+                return self._send_json(
+                    {"error": str(exc)},
+                    status=HTTPStatus.NOT_FOUND,
+                )
         path = WEB_ROOT / ("index.html" if parsed.path == "/" else parsed.path.lstrip("/"))
         resolved = path.resolve()
         if not str(resolved).startswith(str(WEB_ROOT.resolve())) or not resolved.is_file():
@@ -107,13 +207,18 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self) -> None:  # noqa: N802
-        if urlparse(self.path).path != "/api/control":
+        path = urlparse(self.path).path
+        if path not in {"/api/control", "/api/replay"}:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
         try:
-            result = self.runner.control(payload)
+            result = (
+                self.runner.control(payload)
+                if path == "/api/control"
+                else self.runner.replay_control(payload)
+            )
         except (TypeError, ValueError) as exc:
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
             return

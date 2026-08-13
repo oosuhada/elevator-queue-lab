@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Live elevator group-control and queueing theory research lab" />
+    <meta name="description" content="Live elevator group-control research digital twin with replay and statistical evidence" />
     <title>Elevator Queue Lab</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -13,16 +13,16 @@
         <div>
           <div class="eyebrow">OPERATIONS RESEARCH · GROUP CONTROL</div>
           <h1>Elevator Queue Lab</h1>
-          <p>18 floors · 6 cars · passenger-level dispatch simulation</p>
+          <p>18-floor digital twin · predictive dispatch · reproducible statistical evidence</p>
         </div>
         <div class="clock-block">
-          <div id="live-state" class="live-state"><i></i> LIVE SIMULATION</div>
+          <div id="live-state" class="live-state"><i></i><span>LIVE SIMULATION</span></div>
           <strong id="clock">08:00:00</strong>
           <span id="elapsed">T+00:00</span>
         </div>
       </header>
 
-      <section class="controls">
+      <section class="controls" aria-label="Simulation controls">
         <label>
           <span>Traffic regime</span>
           <select id="scenario">
@@ -65,16 +65,17 @@
         </div>
       </section>
 
-      <main class="layout">
+      <main class="workspace">
         <section class="panel building-panel">
           <div class="panel-title">
             <div>
-              <span class="kicker">BUILDING DIGITAL TWIN</span>
+              <span class="kicker">LIVE DIGITAL TWIN</span>
               <h2>Passenger flow & car state</h2>
             </div>
             <div class="legend">
               <span><i class="low"></i>Low bank 1–9F</span>
               <span><i class="high"></i>High bank 1, 10–18F</span>
+              <span><i class="assignment"></i>Assigned call</span>
             </div>
           </div>
 
@@ -82,11 +83,18 @@
             <div class="floor-labels" id="floor-labels"></div>
             <div class="floors" id="floors"></div>
             <div class="shafts" id="shafts"></div>
+            <svg id="assignment-overlay" class="assignment-overlay" aria-label="Active assignment links"></svg>
           </div>
 
-          <div class="calls-area">
-            <span class="kicker">ACTIVE HALL CALLS</span>
-            <div id="calls" class="calls"><span class="muted">Waiting for passenger calls…</span></div>
+          <div class="twin-footer-grid">
+            <section class="calls-area">
+              <span class="kicker">ACTIVE CALLS</span>
+              <div id="calls" class="calls"><span class="muted">Waiting for passenger calls…</span></div>
+            </section>
+            <section class="heatmap-area">
+              <div class="inline-title"><span class="kicker">FLOOR QUEUE HEATMAP</span><small id="heatmap-total">0 waiting</small></div>
+              <div id="floor-heatmap" class="floor-heatmap" aria-label="Queue by floor"></div>
+            </section>
           </div>
         </section>
 
@@ -105,7 +113,7 @@
             <article class="metric">
               <span>Current queue</span>
               <strong id="queue">0</strong>
-              <small id="avg-queue">Lq avg 0.0</small>
+              <small id="avg-queue">Lq avg 0.00</small>
             </article>
             <article class="metric">
               <span>Full-car misses</span>
@@ -122,46 +130,94 @@
               </div>
               <span id="served" class="tag">0 served</span>
             </div>
-            <canvas id="wait-chart" width="660" height="220"></canvas>
+            <canvas id="wait-chart" width="660" height="210"></canvas>
             <div class="chart-key"><span><i class="avg"></i>Average</span><span><i class="p95"></i>P95</span></div>
           </section>
 
-          <section class="panel theory-panel">
+          <section class="panel decision-panel">
             <div class="panel-title compact">
               <div>
-                <span class="kicker">QUEUEING DIAGNOSTIC</span>
-                <h3>Little’s Law check</h3>
+                <span class="kicker">DECISION INSPECTOR</span>
+                <h3>Why this car?</h3>
               </div>
+              <span id="decision-policy" class="tag accent">CAPR</span>
             </div>
-            <div class="equation">Lq ≈ λ · Wq</div>
-            <div class="theory-values">
-              <div><span>Observed Lq</span><strong id="lq-observed">0.00</strong></div>
-              <div><span>λ · Wq</span><strong id="lq-derived">0.00</strong></div>
-              <div><span>Arrival rate</span><strong id="arrival-rate">0/min</strong></div>
+            <p id="decision-reason" class="decision-reason">Waiting for the first dispatch decision…</p>
+            <div class="decision-meta">
+              <span id="decision-call">No active decision</span>
+              <span id="decision-queue">queue 0</span>
             </div>
-            <p>This is a sanity diagnostic, not an M/M/c assumption. Elevator service is state- and route-dependent.</p>
+            <div class="candidate-table-wrap">
+              <table class="candidate-table">
+                <thead><tr><th>Car</th><th>ETA</th><th>Residual</th><th>Score</th><th>Feasible</th></tr></thead>
+                <tbody id="decision-candidates"><tr><td colspan="5" class="muted">No candidate scores yet.</td></tr></tbody>
+              </table>
+            </div>
           </section>
 
-          <section class="panel research-panel">
+          <section class="panel event-panel">
             <div class="panel-title compact">
               <div>
-                <span class="kicker">EXECUTABLE HYPOTHESIS</span>
-                <h3>Capacity-Aware Predictive Reassignment</h3>
+                <span class="kicker">CONTROL EVENTS</span>
+                <h3>Assignment & capacity timeline</h3>
               </div>
-              <span class="tag accent">CAPR</span>
             </div>
-            <p>Invalidate stale assignments before a failed pickup when the assigned car’s predicted residual capacity or route ETA becomes poor.</p>
-            <div class="research-steps">
-              <span>route ETA</span><b>+</b><span>capacity</span><b>+</b><span>hysteresis</span><b>+</b><span>call age</span><b>+</b><span>parking</span>
-            </div>
-            <small id="decision-reason" class="muted">Waiting for the first dispatch decision…</small>
+            <div id="event-stream" class="event-stream"><span class="muted">No dispatch events yet.</span></div>
           </section>
         </aside>
       </main>
 
+      <section class="evidence-layout">
+        <section class="panel comparison-panel">
+          <div class="panel-title">
+            <div>
+              <span class="kicker">M3 · 30-SEED EVIDENCE</span>
+              <h2>Policy comparison</h2>
+            </div>
+            <label class="compact-select"><span>Scenario</span><select id="evidence-scenario"></select></label>
+          </div>
+          <p class="section-note">Values below come directly from the checked-in M3 statistical regression baseline. Energy is a comparative proxy, not kWh.</p>
+          <div id="comparison-cards" class="comparison-cards"></div>
+          <div id="comparison-note" class="comparison-note"></div>
+        </section>
+
+        <section class="panel replay-panel">
+          <div class="panel-title">
+            <div>
+              <span class="kicker">DETERMINISTIC REPLAY</span>
+              <h2>Inspect a saved run</h2>
+            </div>
+            <span id="replay-status" class="tag">live buffer</span>
+          </div>
+          <p class="section-note">Save the current buffered run, then scrub the exact simulator frames. Replay uses saved API state rather than reconstructed chart values.</p>
+          <div class="replay-actions">
+            <button id="save-replay" class="button primary">Save current run</button>
+            <button id="enter-replay" class="button" disabled>Enter replay</button>
+            <button id="return-live" class="button ghost" disabled>Return live</button>
+          </div>
+          <div class="replay-timeline">
+            <input id="replay-slider" type="range" min="0" max="0" value="0" disabled aria-label="Replay timeline" />
+            <div class="replay-meta"><span id="replay-frame">Frame 0 / 0</span><strong id="replay-clock">—</strong></div>
+          </div>
+          <div class="replay-summary">
+            <div><span>Scenario</span><strong id="replay-scenario">—</strong></div>
+            <div><span>Policy</span><strong id="replay-policy">—</strong></div>
+            <div><span>Frames</span><strong id="replay-count">0</strong></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel methodology-strip">
+        <div><span class="kicker">QUEUEING DIAGNOSTIC</span><strong>Lq ≈ λ · Wq</strong></div>
+        <div><span>Observed Lq</span><strong id="lq-observed">0.00</strong></div>
+        <div><span>λ · Wq</span><strong id="lq-derived">0.00</strong></div>
+        <div><span>Arrival rate</span><strong id="arrival-rate">0/min</strong></div>
+        <p>This is a simulator sanity diagnostic, not an M/M/c assumption. Elevator service is route- and state-dependent.</p>
+      </section>
+
       <footer>
-        <span>All displayed values are produced by the simulator API.</span>
-        <span>Seeded experiment foundation · portfolio research project</span>
+        <span>Every displayed metric and replay frame is sourced from simulator or checked-in evidence APIs.</span>
+        <span>M0–M3 complete · M4 digital-twin release work</span>
       </footer>
     </div>
     <script type="module" src="/app.js"></script>

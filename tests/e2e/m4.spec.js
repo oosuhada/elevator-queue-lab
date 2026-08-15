@@ -1,3 +1,4 @@
+const fs = require("node:fs");
 const { test, expect } = require("@playwright/test");
 
 function waitText(value) {
@@ -5,6 +6,7 @@ function waitText(value) {
 }
 
 test("live UI and deterministic replay match API state", async ({ page, request }) => {
+  fs.mkdirSync("artifacts", { recursive: true });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto("/");
   await expect(page.locator("#comparison-cards .comparison-card")).toHaveCount(5);

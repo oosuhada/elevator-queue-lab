@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   simulator:
     runs-on: ubuntu-latest
@@ -20,17 +23,64 @@ jobs:
       - name: Destination-control experiment smoke test
         run: python scripts/run_experiment.py --scenario evening --seconds 120 --seeds 3 --control-mode destination --output /tmp/elevator-destination-smoke.json
       - name: M3 30-seed six-scenario evidence matrix
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        if: github.event_name == 'pull_request'
         run: |
           mkdir -p evidence
           python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
       - name: M3 statistical regression baseline
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        if: github.event_name == 'pull_request'
         run: python scripts/check_regression_baseline.py evidence/m3-evidence.json
       - name: Upload M3 evidence artifacts
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: m3-statistical-evidence
           path: evidence/
+          retention-days: 14
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay'
+        with:
+          node-version: "22"
+      - name: Install browser QA dependencies
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay'
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Start simulator web server
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay'
+        run: |
+          python -m app.server --port 4173 > /tmp/elevator-server.log 2>&1 &
+          echo $! > /tmp/elevator-server.pid
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/api/snapshot > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/elevator-server.log
+          exit 1
+      - name: M4 browser API/replay consistency
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay'
+        run: npm run test:e2e
+      - name: Preserve M4 README screenshot on PR branch
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay' && hashFiles('docs/assets/m4-dashboard.png') == ''
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          git fetch origin "$HEAD_BRANCH"
+          git switch -C "$HEAD_BRANCH" "origin/$HEAD_BRANCH"
+          mkdir -p docs/assets
+          cp artifacts/m4-dashboard-desktop.png docs/assets/m4-dashboard.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets/m4-dashboard.png
+          git commit -m "docs(m4): capture validated digital twin"
+          git push origin "HEAD:$HEAD_BRANCH"
+      - name: Upload M4 visual evidence
+        if: always() && github.event_name == 'pull_request' && github.head_ref == 'feat/m4-digital-twin-replay'
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-visual-evidence
+          path: artifacts/
+          if-no-files-found: warn
           retention-days: 14

@@ -25,6 +25,8 @@ class ElevatorSimulation:
         weights: QueueWeights | None = None,
         config: SimulationConfig | None = None,
         trace: PassengerTrace | None = None,
+        policy: DispatchPolicy | None = None,
+        auto_dispatch: bool = True,
     ) -> None:
         self.config = config or SimulationConfig()
         self.scenario = scenario
@@ -37,8 +39,13 @@ class ElevatorSimulation:
         self._trace_index = 0
         self._last_demand_second = 0
         self._last_sample_second = 0
-        self.policy_name = policy_name
-        self.policy: DispatchPolicy = build_policy(policy_name, weights)
+        self.policy: DispatchPolicy = policy or build_policy(
+            policy_name,
+            weights,
+            scenario=scenario,
+        )
+        self.policy_name = self.policy.name if policy is not None else policy_name
+        self.auto_dispatch = auto_dispatch
         self.sim_time = 0.0
         self.clock_start = self.demand.start_seconds
         self.next_passenger_id = 1
@@ -83,11 +90,51 @@ class ElevatorSimulation:
             self._generate_due_demand()
             self._expire_impatient_passengers()
             self._expire_sticky_blocks()
-            self._dispatch_calls()
+            if self.auto_dispatch:
+                self._dispatch_calls()
             for elevator in self.elevators:
                 self._advance_elevator(elevator, dt)
-            self._dispatch_calls()
+            if self.auto_dispatch:
+                self._dispatch_calls()
             self._sample_due_metrics()
+
+    def active_call_keys(self) -> tuple[CallKey, ...]:
+        """Return stable call identifiers for interactive/learned dispatch environments."""
+
+        return tuple(self.hall_calls.keys())
+
+    def call_queue_size(self, key: CallKey) -> int:
+        if key not in self.hall_calls:
+            return 0
+        return self._queue_size(key)
+
+    def compatible_candidates(self, key: CallKey) -> tuple[Elevator, ...]:
+        if key not in self.hall_calls:
+            return ()
+        return tuple(self._trip_compatible_candidates(key))
+
+    def apply_external_decision(
+        self,
+        key: CallKey,
+        decision: DispatchDecision,
+    ) -> bool:
+        """Apply one externally selected dispatch decision through normal simulator invariants.
+
+        The method is deliberately narrow: learned environments may choose a car, but assignment,
+        reassignment, route ownership, ledger recording and hysteresis continue to use the same
+        implementation as ordinary policies. Returns whether the call still existed when applied.
+        """
+
+        call = self.hall_calls.get(key)
+        if call is None or not self._waiting_for_call(key):
+            return False
+        call.last_evaluated_at = self.sim_time
+        self._record_decision(call, decision, self._queue_size(key))
+        if call.assigned_elevator is None:
+            self._apply_assignment(call, decision)
+        else:
+            self._consider_reassignment(call, decision)
+        return True
 
     def run(self, seconds: int) -> dict[str, float | int]:
         self.step(seconds)

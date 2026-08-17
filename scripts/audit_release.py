@@ -154,6 +154,18 @@ def audit(*, live_url: str | None = None) -> list[str]:
                     errors.append(f"live demo returned HTTP {response.status}: {live_url}")
         except Exception as exc:  # network errors are release blockers only when URL is required.
             errors.append(f"live demo check failed: {live_url}: {exc}")
+        try:
+            health_url = live_url.rstrip("/") + "/api/health"
+            request = urllib.request.Request(
+                health_url,
+                headers={"User-Agent": "elevator-queue-lab-release-audit"},
+            )
+            with urllib.request.urlopen(request, timeout=10) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+                if response.status != 200 or payload.get("status") != "ok":
+                    errors.append(f"live demo health contract failed: {health_url}: {payload}")
+        except Exception as exc:
+            errors.append(f"live demo health check failed: {health_url}: {exc}")
     return errors
 
 

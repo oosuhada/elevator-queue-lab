@@ -2,6 +2,8 @@
 
 **A reproducible elevator group-control research lab for an 18-floor office building.**
 
+**Live demo:** [https://elevator.oosu.dev/](https://elevator.oosu.dev/)
+
 Elevator Queue Lab starts from a practical failure mode: a hall call is assigned to a car, that
 car later becomes full or follows a poor route, and the passenger waits while the controller keeps
 treating the stale assignment as valid. The project turns that observation into a controlled
@@ -13,11 +15,11 @@ normal traffic and evening departure. Every passenger is represented from arriva
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
-![Elevator Queue Lab live digital twin](docs/assets/m4-dashboard.png)
+![Elevator Queue Lab live digital twin](docs/assets/m6-dashboard.png)
 
-The screenshot above is captured from the real simulator UI in CI after the browser test verifies
-that visible car, queue and service-quality state matches the API. It is not a mockup or static
-chart fixture.
+The screenshot above is captured from the deployed public simulator at `elevator.oosu.dev` after
+Chromium verifies the live UI/API contract: all six cars, all 18 floors, the evidence cards, the
+learned-policy control path and simulator audit. It is not a mockup or static chart fixture.
 
 ## Research question
 
@@ -96,6 +98,23 @@ regimes regress on mean wait; the one mixed-day improvement is not enough to dec
 win. ETA/load/capacity/age/pre-positioning feature ablations do not overturn that conclusion.
 See `docs/M5_MODEL_CARD.md` and `evidence/m5-heldout-evaluation.json`.
 
+## Final 30-seed held-out release evidence
+
+M6 keeps the exact M5 checkpoint fixed and expands the release evaluation to **30 disjoint
+held-out passenger seeds (21–50)**. The overall conclusion is unchanged: CAPR is a clean candidate
+only in lunch traffic, while normal/mixed traffic expose a strong service/energy trade-off; the RL
+checkpoint improves only the unseen `mixed_day` mixture and is not a general replacement for the
+heuristic controllers.
+
+![30-seed held-out mean waiting time](docs/assets/m6-heldout-wait.svg)
+
+![Wait-energy trade-off versus collective](docs/assets/m6-wait-energy-tradeoff.svg)
+
+The strongest supported operating rule is therefore **regime-gated predictive intervention with
+tail/fairness/energy vetoes**, not “always CAPR” and not “always RL.” See
+`docs/M6_RESEARCH_REPORT.md` for the architecture, evidence interpretation, external references and
+limitations, and `docs/M6_EVIDENCE_SUMMARY.md` for tables generated directly from committed JSON.
+
 ## Run locally
 
 Python 3.11+ is enough for the simulator and research server.
@@ -118,6 +137,9 @@ python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3 --co
 python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
 python scripts/check_regression_baseline.py evidence/m3-evidence.json
 python scripts/run_m5_training.py
+python scripts/run_m6_evaluation.py
+python scripts/generate_m6_assets.py
+python scripts/audit_release.py
 ```
 
 For browser/API visual verification:
@@ -134,12 +156,13 @@ Artifacts explicitly record a zero-second warm-up and the measurement window use
 
 ## Project status
 
-**M0 reproducibility, M1 simulator physics, M2 controller laboratory, M3 statistical evidence,
-M4 live digital twin/replay and M5 learned-control baseline are implemented.** M5 produced a useful
-negative/mixed result rather than a forced RL win. M6 is now the next research gate: extract the
-strongest theory actually supported by the CAPR/RL ablations, generate final research outputs and
-complete public-demo/portfolio release work. `docs/ROADMAP.md` is the canonical work queue and
-`AGENTS.md` defines the continuation contract for future coding sessions.
+**M0 reproducibility through M6 portfolio release are implemented.** The fixed M5 checkpoint has a
+30-seed held-out release artifact, the final report/plots are generated from committed evidence,
+and the public Mac mini deployment is live at `https://elevator.oosu.dev/`. External Chromium QA
+verifies HTTP 200, six cars, all 18 floors, five evidence cards, the RL `mixed_day` control path,
+simulator audit success, zero failed browser requests and zero console errors.
+`docs/ROADMAP.md` is the canonical work queue and `AGENTS.md` defines the continuation contract for
+future coding sessions.
 
 ## Methodology references
 

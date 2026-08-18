@@ -13,13 +13,20 @@ open project is not a normative implementation of either publication.
 
 ## 2. Demand model
 
-The canonical generator is a time-varying stochastic origin-destination process.
+The canonical generator is a time-varying stochastic origin-destination process with an explicit
+workplace trip-purpose mix. The default synthetic assumption is **85% lobby-linked trips, 10%
+top-floor/roof-access trips and 5% same-bank inter-floor trips**. This is a modeling prior chosen to
+avoid unrealistically dense floor-to-floor movement; it is not measured building telemetry.
 
-- Morning: lobby-dominant arrivals with smaller inter-floor traffic.
-- Lunch: office-to-lobby and lobby-to-office waves plus inter-floor movement.
-- Normal: lower mixed flow.
-- Evening: office-to-lobby dominant down-peak.
-- Shock: a meeting/event release producing a temporary floor hotspot.
+- Morning: the 85% lobby-linked majority is 97% lobby → office up-peak.
+- Lunch: the lobby-linked majority is bidirectional, slightly favoring office → lobby.
+- Normal: lower-intensity traffic remains lobby-centric, with 65% of lobby-linked trips heading to 1F.
+- Evening: the lobby-linked majority is 97% office → lobby down-peak.
+- Roof-access: 18F is the current top-floor/roof-access proxy; roof trips stay within the high bank.
+- Inter-floor: only 5% of generated trips, always within one bank because transfer journeys are not
+  yet represented as multi-leg passengers.
+- Shock: a 16F meeting/event release overlays the evening stream instead of inventing simultaneous
+  random releases from many floors.
 
 Every scenario must be reproducible by seed. Policy comparisons use **common random numbers**:
 the same passenger trace/seed is evaluated by every policy to reduce comparison noise.

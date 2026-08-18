@@ -93,12 +93,31 @@ def audit(*, live_url: str | None = None) -> list[str]:
                 errors.append(f"broken local link in {markdown.relative_to(ROOT)}: {target}")
 
     model_path = ROOT / "models" / "m5-ddqn-baseline.json"
+    m3_path = ROOT / "evidence" / "m3-regression-baseline.json"
+    m5_path = ROOT / "evidence" / "m5-heldout-evaluation.json"
     m6_path = ROOT / "evidence" / "m6-heldout-30seed.json"
-    if model_path.is_file() and m6_path.is_file():
+    if model_path.is_file() and m3_path.is_file() and m5_path.is_file() and m6_path.is_file():
+        model = json.loads(model_path.read_text(encoding="utf-8"))
+        m3 = json.loads(m3_path.read_text(encoding="utf-8"))
+        m5 = json.loads(m5_path.read_text(encoding="utf-8"))
         m6 = json.loads(m6_path.read_text(encoding="utf-8"))
         actual_hash = hashlib.sha256(model_path.read_bytes()).hexdigest()
         if m6.get("fixed_model_sha256") != actual_hash:
             errors.append("M6 evidence model SHA-256 does not match checked-in M5 artifact")
+        demand_contracts = (
+            m3.get("source", {}).get("demand_contract"),
+            m5.get("demand_contract"),
+            m6.get("demand_contract"),
+            model.get("metadata", {}).get("demand_contract"),
+        )
+        if any(contract is None for contract in demand_contracts):
+            errors.append("M3/M5/M6/model artifacts must all record the demand contract")
+        elif len({json.dumps(contract, sort_keys=True) for contract in demand_contracts}) != 1:
+            errors.append("M3/M5/M6/model artifacts do not share one demand contract")
+        else:
+            shares = demand_contracts[0].get("trip_purpose_share", {})
+            if shares != {"lobby_linked": 0.85, "rooftop_linked": 0.10, "interfloor": 0.05}:
+                errors.append(f"unexpected office trip-purpose mix in evidence: {shares}")
         contract = m6.get("held_out_contract", {})
         held_out = {int(seed) for seed in contract.get("passenger_seeds", [])}
         training = {int(seed) for seed in m6.get("training_passenger_seeds", [])}

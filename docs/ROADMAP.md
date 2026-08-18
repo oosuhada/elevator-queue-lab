@@ -102,3 +102,12 @@ evening/shock all fail the collective mean-wait comparison. See `docs/M5_MODEL_C
 
 **Gate:** a reviewer can clone, reproduce one benchmark, understand the hypothesis and open a live
 demo without private infrastructure.
+
+## Post-release hardening — office demand realism v2
+
+- [x] replace over-mixed floor-to-floor demand with an explicit 85% lobby / 10% roof / 5% inter-floor contract;
+- [x] make lobby direction regime-aware instead of changing the trip-purpose mix;
+- [x] constrain roof/inter-floor trips to physically feasible banks and make shock traffic a 16F event release;
+- [x] embed the demand contract in M3/M5/M6 evidence and regression checks;
+- [x] regenerate the 900-run M3 baseline, retrain M5, and rerun the M6 30-seed held-out release;
+- [ ] deploy and visually re-verify the hardened demand model at `https://elevator.oosu.dev/`.

@@ -16,6 +16,7 @@ from app.learning import (
     save_model_artifact,
     train_agent,
 )
+from app.demand import demand_contract
 
 
 TRAIN_SCENARIOS = ("morning", "lunch", "normal", "evening", "shock")
@@ -106,6 +107,7 @@ def main() -> None:
     )
     metadata = {
         **training,
+        "demand_contract": demand_contract(),
         "algorithm": "dependency-free Dueling Double DQN",
         "common_random_numbers_in_evaluation": True,
         "held_out_scenarios": list(HELD_OUT_SCENARIOS),
@@ -150,6 +152,7 @@ def main() -> None:
 
     payload = {
         "schema": "elevator-queue-lab.m5-research-evidence.v1",
+        "demand_contract": demand_contract(),
         "training_contract": {
             "scenarios": list(TRAIN_SCENARIOS),
             "passenger_seeds": list(training_seeds),

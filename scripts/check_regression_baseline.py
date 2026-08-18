@@ -17,6 +17,9 @@ def _trace_manifest_sha256(trace_digests: dict[str, str]) -> str:
 def check_baseline(generated: dict[str, object], baseline: dict[str, object], tolerance: float) -> list[str]:
     failures: list[str] = []
     source = baseline["source"]
+    expected_demand_contract = source.get("demand_contract")
+    if expected_demand_contract is not None and generated.get("demand_contract") != expected_demand_contract:
+        failures.append("demand contract changed")
     window = generated.get("measurement_window", {})
     if int(window.get("warmup_seconds", -1)) != int(source["warmup_seconds"]):
         failures.append("warmup_seconds changed")

@@ -80,8 +80,9 @@ wait alone.
 - episode length: **120 simulated seconds**;
 - epochs: **2** (60 total episodes);
 - fixed final checkpoint; held-out results are never used to choose a checkpoint;
-- 1,685 optimizer updates in the checked-in run;
-- final recorded replay-batch loss: **11.88492099**.
+- 1,674 optimizer updates in the checked-in run;
+- final recorded replay-batch loss: **14.18513786**;
+- demand contract: **85% lobby-linked / 10% 18F roof-access proxy / 5% same-bank inter-floor**.
 
 `mixed_day` is excluded from training and is the held-out traffic mixture. Evaluation passenger
 seeds **21–30** are disjoint from training for every scenario.
@@ -94,21 +95,21 @@ existing M3 classification relative to collective.
 
 | scenario | collective AWT | CAPR AWT | RL AWT | RL vs collective | RL guardrail |
 |---|---:|---:|---:|---:|---|
-| morning | 14.60 s | 16.98 s | **27.87 s** | +13.27 s | no mean improvement |
-| lunch | 24.37 s | 22.86 s | **29.88 s** | +5.52 s | no mean improvement |
-| normal | 15.22 s | 11.23 s | **25.72 s** | +10.51 s | no mean improvement |
-| evening | 18.35 s | 19.18 s | **30.67 s** | +12.32 s | no mean improvement |
-| shock | 22.46 s | 22.27 s | **31.90 s** | +9.44 s | no mean improvement |
-| mixed_day | 49.71 s | 13.59 s | **40.20 s** | -9.51 s | candidate improvement |
+| morning | 34.16 s | 26.69 s | **42.24 s** | +8.08 s | no mean improvement |
+| lunch | 22.47 s | 23.35 s | **34.79 s** | +12.32 s | no mean improvement |
+| normal | 17.50 s | 10.72 s | **22.83 s** | +5.32 s | no mean improvement |
+| evening | 20.69 s | 21.29 s | **34.76 s** | +14.07 s | no mean improvement |
+| shock | 21.84 s | 19.78 s | **35.08 s** | +13.25 s | no mean improvement |
+| mixed_day | 37.72 s | 15.72 s | **35.72 s** | -2.00 s | candidate improvement |
 
 The learned baseline therefore **fails the M5 general-improvement gate**. It is not valid to claim
 that this Dueling Double DQN beats collective or CAPR generally. On five regimes it waits markedly
 longer. Only the completely held-out `mixed_day` mixture improves collective while remaining inside
 the configured fairness/energy guardrails.
 
-The paired mixed-day mean delta is -9.51 s, but its 95% CI half-width is 20.19 s on only ten held-out
-seeds, so even that isolated win should be treated as a hypothesis for follow-up rather than a
-strong superiority claim.
+The paired mixed-day mean delta is only -2.00 s with a 95% CI half-width of 10.33 s on ten held-out
+seeds. That interval is far wider than the observed mean improvement, so the isolated classification
+should be treated as a weak follow-up signal rather than a superiority claim.
 
 ## Ablation result
 
@@ -116,11 +117,11 @@ The same held-out contract was rerun with each observation feature group zeroed:
 capacity, age and pre-positioning context. No ablation changes the high-level verdict: all five
 single-regime cases still fail and `mixed_day` remains the only guardrail-clean candidate.
 
-The direction of the changes is also useful negative evidence. Removing age or capacity features
-actually lowers mixed-day AWT (to roughly 37.99 s and 38.62 s respectively), while removing
-pre-positioning context worsens it to roughly 41.98 s. That means this small network has **not**
-learned a clean monotonic analogue of the hand-designed CAPR terms; feature presence alone should
-not be interpreted as causal benefit.
+In this retrained lobby-centric model, all five single-feature ablations produce the same mixed-day
+headline to four decimals (**35.7217 s AWT, 734.178 energy proxy**). The features alter network
+inputs, but not enough to change aggregate selected actions/results under this fixed checkpoint.
+That is stronger negative evidence than a noisy feature ranking: this small network has **not**
+demonstrated meaningful dependence on the individual CAPR-like feature groups.
 
 ## Limitations and intended use
 

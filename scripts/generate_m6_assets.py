@@ -50,7 +50,7 @@ def _wait_chart(payload: dict[str, object]) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#07121a"/>',
         '<text x="82" y="34" fill="#e6f1f7" font-family="system-ui,sans-serif" font-size="22" font-weight="700">30-seed held-out mean waiting time</text>',
-        '<text x="82" y="54" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Fixed M5 checkpoint · common passenger traces · whiskers are 95% CI half-widths</text>',
+        '<text x="82" y="54" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Fixed M5 checkpoint · 85% lobby / 10% roof / 5% inter-floor · whiskers are 95% CI half-widths</text>',
     ]
     for tick in range(0, int(axis_max) + 1, 10):
         y = top + plot_h - (tick / axis_max) * plot_h
@@ -117,7 +117,7 @@ def _tradeoff_chart(payload: dict[str, object]) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#07121a"/>',
         '<text x="92" y="35" fill="#e6f1f7" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Wait–energy trade-off vs collective</text>',
-        '<text x="92" y="56" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Lower-left is the desired quadrant; percentages use 30 held-out seed means</text>',
+        '<text x="92" y="56" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">85% lobby / 10% roof / 5% inter-floor · lower-left is the desired quadrant</text>',
         f'<rect x="{left}" y="{top}" width="{px(0)-left:.1f}" height="{py(0)-top:.1f}" fill="#173c34" opacity="0.25"/>',
         f'<line x1="{px(0):.1f}" y1="{top}" x2="{px(0):.1f}" y2="{top+plot_h}" stroke="#607986" stroke-width="1.2"/>',
         f'<line x1="{left}" y1="{py(0):.1f}" x2="{left+plot_w}" y2="{py(0):.1f}" stroke="#607986" stroke-width="1.2"/>',
@@ -151,6 +151,9 @@ def _evidence_markdown(m3: dict[str, object], m5: dict[str, object], m6: dict[st
         "# M6 evidence summary",
         "",
         "This file is generated from committed experiment artifacts. Do not edit the numeric tables by hand.",
+        "",
+        "Demand contract: **85% lobby-linked / 10% 18F roof-access proxy / 5% same-bank inter-floor**. "
+        "Time-of-day regimes change direction while preserving that purpose mix.",
         "",
         "## 30-seed held-out release evaluation",
         "",

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import threading
 import unittest
+import urllib.request
+from http.server import ThreadingHTTPServer
 
-from app.server import REPLAY_SCHEMA, SimulationRunner
+from app.server import Handler, REPLAY_SCHEMA, SimulationRunner
 
 
 class ServerRunnerTests(unittest.TestCase):
@@ -64,6 +67,21 @@ class ServerRunnerTests(unittest.TestCase):
             "candidate_improvement",
             baseline["scenarios"]["lunch"]["policies"]["capr"]["guardrail_classification"],
         )
+
+    def test_static_assets_disable_intermediary_caching(self) -> None:
+        handler = type("TestElevatorQueueHandler", (Handler,), {"runner": self.runner})
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            base_url = f"http://127.0.0.1:{server.server_port}"
+            for path in ("/", "/app.js", "/styles.css"):
+                with urllib.request.urlopen(base_url + path) as response:
+                    self.assertEqual("no-store", response.headers.get("Cache-Control"))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=1)
 
 if __name__ == "__main__":
     unittest.main()

@@ -110,4 +110,4 @@ demo without private infrastructure.
 - [x] constrain roof/inter-floor trips to physically feasible banks and make shock traffic a 16F event release;
 - [x] embed the demand contract in M3/M5/M6 evidence and regression checks;
 - [x] regenerate the 900-run M3 baseline, retrain M5, and rerun the M6 30-seed held-out release;
-- [ ] deploy and visually re-verify the hardened demand model at `https://elevator.oosu.dev/`.
+- [x] deploy and visually re-verify the hardened demand model at `https://elevator.oosu.dev/`.

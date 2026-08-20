@@ -19,6 +19,8 @@ from .simulator import ElevatorSimulation
 ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web"
 M3_BASELINE = ROOT / "evidence" / "m3-regression-baseline.json"
+M7_DISCOVERY = ROOT / "evidence" / "m7-bidirectional-load-sweep.json"
+M7_VALIDATION = ROOT / "evidence" / "m7-threshold-validation.json"
 REPLAY_SCHEMA = "elevator-queue-lab.replay.v1"
 REPLAY_LIMIT = 600
 
@@ -175,6 +177,20 @@ class SimulationRunner:
             "baseline": baseline,
         }
 
+    def theory(self) -> dict[str, Any]:
+        missing = [
+            str(path.relative_to(ROOT))
+            for path in (M7_DISCOVERY, M7_VALIDATION)
+            if not path.is_file()
+        ]
+        if missing:
+            raise FileNotFoundError("M7 theory evidence is unavailable: " + ", ".join(missing))
+        return {
+            "schema": "elevator-queue-lab.theory-ui.v1",
+            "discovery": json.loads(M7_DISCOVERY.read_text(encoding="utf-8")),
+            "validation": json.loads(M7_VALIDATION.read_text(encoding="utf-8")),
+        }
+
 
 class Handler(BaseHTTPRequestHandler):
     runner: SimulationRunner
@@ -195,6 +211,14 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/experiment":
             try:
                 return self._send_json(self.runner.experiment())
+            except FileNotFoundError as exc:
+                return self._send_json(
+                    {"error": str(exc)},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+        if parsed.path == "/api/theory":
+            try:
+                return self._send_json(self.runner.theory())
             except FileNotFoundError as exc:
                 return self._send_json(
                     {"error": str(exc)},

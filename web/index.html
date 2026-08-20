@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Live elevator group-control research digital twin with replay and statistical evidence" />
     <title>Elevator Queue Lab</title>
-    <link rel="stylesheet" href="/styles.css?v=office-demand-v2" />
+    <link rel="stylesheet" href="/styles.css?v=counterflow-theory-v1" />
   </head>
   <body>
     <div class="shell">
@@ -263,6 +263,59 @@
         </section>
       </section>
 
+      <section class="panel theory-panel" aria-labelledby="theory-title">
+        <div class="panel-title theory-heading">
+          <div>
+            <span class="kicker">M7 · THEORY EXTRACTION · 4,680 CONTROLLED RUNS</span>
+            <h2 id="theory-title">Counterflow criticality</h2>
+          </div>
+          <span class="tag accent">discovery + held-out falsification</span>
+        </div>
+        <div class="theory-intro">
+          <div class="theory-formula-card">
+            <span>Candidate state variable</span>
+            <strong>B = λ · 4p↑(1 − p↑)</strong>
+            <small>λ = arrivals/min · p↑ = lobby-linked up probability · B = bidirectional load rate</small>
+          </div>
+          <p>
+            M7 holds CAPR scoring and parking fixed, then turns only <b>continuous predictive reassignment</b>
+            on/off. The question is whether counterflow creates enough route competition for reassignment to
+            pay for its churn. This is a falsifiable empirical phase hypothesis for this simulator — not a
+            universal queueing theorem or a novelty claim.
+          </p>
+        </div>
+        <div id="theory-leaders" class="theory-leaders" aria-label="Counterflow criticality headline evidence"></div>
+        <div class="theory-grid">
+          <section class="theory-chart-card" aria-labelledby="theory-chart-title">
+            <div class="insight-title">
+              <div>
+                <span class="kicker">PHASE DIAGRAM</span>
+                <h3 id="theory-chart-title">Continuous reassignment value vs bidirectional load</h3>
+              </div>
+              <span class="tag">ΔAWT · CAPR − static</span>
+            </div>
+            <svg id="theory-scatter" viewBox="0 0 820 340" role="img" aria-label="Counterflow criticality discovery and held-out validation plot"></svg>
+            <div class="theory-chart-legend">
+              <span><i class="discovery"></i>Discovery grid</span>
+              <span><i class="validation"></i>Held-out grid</span>
+              <span><i class="gain"></i>Below zero = reassignment helps</span>
+            </div>
+          </section>
+          <section class="theory-phase-card" aria-labelledby="phase-title">
+            <div class="insight-title">
+              <div>
+                <span class="kicker">EMPIRICAL REGIMES</span>
+                <h3 id="phase-title">From churn to predictive value</h3>
+              </div>
+            </div>
+            <div id="theory-phase-bins" class="theory-phase-bins"></div>
+            <div class="theory-rule" id="theory-rule"></div>
+          </section>
+        </div>
+        <div class="canonical-theory-row" id="canonical-theory-row" aria-label="Canonical office scenario projections"></div>
+        <p class="theory-caveat" id="theory-caveat"></p>
+      </section>
+
       <section class="panel methodology-strip">
         <div><span class="kicker">QUEUEING DIAGNOSTIC</span><strong>Lq ≈ λ · Wq</strong></div>
         <div><span>Observed Lq</span><strong id="lq-observed">0.00</strong></div>
@@ -273,10 +326,10 @@
 
       <footer>
         <span>Every displayed metric and replay frame is sourced from simulator or checked-in evidence APIs.</span>
-        <span>M0–M6 research release · 30-seed held-out evidence · public-demo candidate</span>
+        <span>M0–M7 research release · controlled phase sweep · held-out falsification</span>
       </footer>
     </div>
-    <script type="module" src="/app.js?v=policy-insight-v1"></script>
-    <script type="module" src="/queue-trend.js?v=policy-insight-v1"></script>
+    <script type="module" src="/app.js?v=counterflow-theory-v1"></script>
+    <script type="module" src="/queue-trend.js?v=counterflow-theory-v1"></script>
   </body>
 </html>

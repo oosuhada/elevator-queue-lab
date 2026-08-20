@@ -210,6 +210,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        # The public demo is deployed by replacing this checkout in place. Avoid
+        # serving a mixed-version UI (new HTML with stale JS/CSS) through an
+        # intermediary cache after deploys. The app is tiny, so freshness is
+        # more important here than static-asset caching.
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from .domain import SimulationConfig
 from .simulator import ElevatorSimulation
 
 
@@ -25,10 +26,18 @@ class SimulationRunner:
         self.speed = 20
         self.scenario = "morning"
         self.policy = "capr"
-        self.simulation = ElevatorSimulation(self.scenario, self.policy)
+        self.control_mode = "conventional"
+        self.simulation = self._new_simulation()
         self.closed = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
+
+    def _new_simulation(self) -> ElevatorSimulation:
+        return ElevatorSimulation(
+            self.scenario,
+            self.policy,
+            config=SimulationConfig(control_mode=self.control_mode),
+        )
 
     def _loop(self) -> None:
         while not self.closed.is_set():
@@ -51,12 +60,22 @@ class SimulationRunner:
             action = str(payload.get("action", "update"))
             next_scenario = str(payload.get("scenario", self.scenario))
             next_policy = str(payload.get("policy", self.policy))
+            next_control_mode = str(payload.get("control_mode", self.control_mode))
+            if next_control_mode not in {"conventional", "destination"}:
+                raise ValueError("control_mode must be conventional or destination")
             if "speed" in payload:
                 self.speed = max(1, min(120, int(payload["speed"])))
-            if action == "reset" or next_scenario != self.scenario or next_policy != self.policy:
+            requires_reset = (
+                action == "reset"
+                or next_scenario != self.scenario
+                or next_policy != self.policy
+                or next_control_mode != self.control_mode
+            )
+            if requires_reset:
                 self.scenario = next_scenario
                 self.policy = next_policy
-                self.simulation = ElevatorSimulation(self.scenario, self.policy)
+                self.control_mode = next_control_mode
+                self.simulation = self._new_simulation()
             if action == "pause":
                 self.running = False
             elif action in {"start", "reset", "update"}:
@@ -93,11 +112,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
-        self._send_json(self.runner.control(payload))
+        try:
+            result = self.runner.control(payload)
+        except (TypeError, ValueError) as exc:
+            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+            return
+        self._send_json(result)
 
-    def _send_json(self, payload: object) -> None:
+    def _send_json(
+        self,
+        payload: object,
+        *,
+        status: HTTPStatus = HTTPStatus.OK,
+    ) -> None:
         body = json.dumps(payload).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")

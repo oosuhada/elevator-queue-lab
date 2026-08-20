@@ -48,6 +48,11 @@ superiority**.
 - P50/P95/P99 wait, journey time, throughput, unfinished queue, reassignment latency, floor fairness,
   capacity misses and a transparent comparative energy proxy;
 - M3 policy-comparison cards exposed in the UI from the checked-in regression evidence baseline;
+- Gymnasium-compatible M5 dispatch MDP with a 77-value observation, seven masked actions and an
+  explicit wait/tail/fairness/capacity/energy reward contract;
+- dependency-free Dueling Double DQN learned policy, checked-in model artifact and deterministic
+  train/held-out evaluation command;
+- `rl` runtime policy selectable in the live digital twin using the checked-in M5 model;
 - JSON + run-level CSV + summary CSV evidence artifacts, paired effect sizes and guardrail flags;
 - Playwright browser verification that visible metrics, all six cars and all 18 floor queues match API/replay state;
 - responsive desktop/mobile visual QA with screenshots generated from that same verified browser run.
@@ -71,6 +76,26 @@ single global winner.
 See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are reproducible
 simulation results, **not real-building performance claims**.
 
+## First held-out learned-controller evidence: negative/mixed
+
+M5 deliberately uses disjoint data: the model trains on passenger seeds **1–6** across five base
+traffic regimes, while evaluation uses seeds **21–30**. `mixed_day` is excluded from training and
+serves as the held-out traffic mixture. Collective, CAPR and RL see the same passenger trace for
+each held-out scenario/seed.
+
+- **Morning:** collective 14.60 s mean wait vs RL 27.87 s.
+- **Lunch:** 24.37 s vs RL 29.88 s.
+- **Normal:** 15.22 s vs RL 25.72 s.
+- **Evening:** 18.35 s vs RL 30.67 s.
+- **Shock:** 22.46 s vs RL 31.90 s.
+- **Held-out mixed day:** collective 49.71 s vs RL 40.20 s; this is the only M5 scenario classified
+  as a guardrail-clean candidate improvement.
+
+So the checked-in Dueling Double DQN **does not pass the general-superiority gate**. Five traffic
+regimes regress on mean wait; the one mixed-day improvement is not enough to declare a general RL
+win. ETA/load/capacity/age/pre-positioning feature ablations do not overturn that conclusion.
+See `docs/M5_MODEL_CARD.md` and `evidence/m5-heldout-evaluation.json`.
+
 ## Run locally
 
 Python 3.11+ is enough for the simulator and research server.
@@ -92,6 +117,7 @@ python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3 --control-mode destination
 python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
 python scripts/check_regression_baseline.py evidence/m3-evidence.json
+python scripts/run_m5_training.py
 ```
 
 For browser/API visual verification:
@@ -108,11 +134,12 @@ Artifacts explicitly record a zero-second warm-up and the measurement window use
 
 ## Project status
 
-**M0 reproducibility, M1 simulator physics, M2 controller laboratory, M3 statistical evidence and
-M4 live digital twin/replay are implemented.** M5 is the next research gate: build a learned
-elevator-group controller under the same deterministic traces and evaluate it on held-out traffic
-without relaxing the fairness or energy guardrails. `docs/ROADMAP.md` is the canonical work queue
-and `AGENTS.md` defines the continuation contract for future coding sessions.
+**M0 reproducibility, M1 simulator physics, M2 controller laboratory, M3 statistical evidence,
+M4 live digital twin/replay and M5 learned-control baseline are implemented.** M5 produced a useful
+negative/mixed result rather than a forced RL win. M6 is now the next research gate: extract the
+strongest theory actually supported by the CAPR/RL ablations, generate final research outputs and
+complete public-demo/portfolio release work. `docs/ROADMAP.md` is the canonical work queue and
+`AGENTS.md` defines the continuation contract for future coding sessions.
 
 ## Methodology references
 

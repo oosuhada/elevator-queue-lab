@@ -73,15 +73,19 @@ saves the run, then repeats the comparison against `/api/replay`. Desktop and
 
 ## M5 — learned control
 
-- [ ] Gymnasium-compatible MDP environment;
-- [ ] state/action/reward contract and masking for infeasible actions;
-- [ ] Dueling Double DQN baseline;
-- [ ] held-out seed/scenario evaluation;
-- [ ] ablation versus CAPR terms;
-- [ ] model artifact + model card + reproducible training command.
+- [x] Gymnasium-compatible MDP environment;
+- [x] state/action/reward contract and masking for infeasible actions;
+- [x] Dueling Double DQN baseline;
+- [x] held-out seed/scenario evaluation;
+- [x] ablation versus CAPR terms;
+- [x] model artifact + model card + reproducible training command.
 
 **Gate:** learned policy improvement must survive held-out evaluation and not violate fairness or
-energy guardrails. Otherwise the report explicitly records the negative result.
+energy guardrails. Otherwise the report explicitly records the negative result. The first fixed
+M5 checkpoint does **not** pass this superiority gate: held-out seeds 21–30 show a guardrail-clean
+improvement only on the completely held-out `mixed_day` mixture, while morning/lunch/normal/
+evening/shock all fail the collective mean-wait comparison. See `docs/M5_MODEL_CARD.md` and
+`evidence/m5-heldout-evaluation.json`.
 
 ## M6 — theory extraction and portfolio release
 

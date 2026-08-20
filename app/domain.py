@@ -101,7 +101,7 @@ class SimulationConfig:
     reassignment_min_gain: float = 8.0
     reassignment_min_eta_gain_seconds: float = 5.0
     max_noncapacity_reassignments_per_call: int = 1
-    capacity_reserve: int = 1
+    capacity_reserve: int = 0
 
     def __post_init__(self) -> None:
         if self.control_mode not in {"conventional", "destination"}:

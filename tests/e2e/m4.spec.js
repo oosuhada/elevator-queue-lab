@@ -14,17 +14,21 @@ test("live UI and deterministic replay match API state", async ({ page, request 
   await request.post("/api/control", {
     data: {
       action: "reset",
-      scenario: "evening",
+      scenario: "shock",
       policy: "capr",
       control_mode: "conventional",
       speed: 120,
     },
   });
-  await page.waitForTimeout(900);
+  await expect.poll(async () => {
+    const response = await request.get("/api/snapshot");
+    const body = await response.json();
+    return Number(body.metrics.reassignments || 0);
+  }, { timeout: 8000 }).toBeGreaterThan(0);
   const pauseResponse = await request.post("/api/control", {
     data: {
       action: "pause",
-      scenario: "evening",
+      scenario: "shock",
       policy: "capr",
       control_mode: "conventional",
       speed: 120,
@@ -37,6 +41,26 @@ test("live UI and deterministic replay match API state", async ({ page, request 
   await expect(page.locator("#avg-wait")).toHaveText(waitText(snapshot.metrics.avg_wait));
   await expect(page.locator("#p95-wait")).toHaveText(waitText(snapshot.metrics.p95_wait));
   await expect(page.locator("#served")).toHaveText(`${snapshot.metrics.served} served`);
+  await expect(page.locator("#wait-chart")).toBeVisible();
+  await expect(page.locator("#queue-trend-chart")).toBeVisible();
+  const latestQueueHistory = snapshot.history.at(-1);
+  expect(latestQueueHistory).toBeTruthy();
+  await expect(page.locator("#queue-trend-value"))
+    .toHaveText(Number(latestQueueHistory.avg_queue).toFixed(2));
+
+  const expectedCalls = Math.min(12, snapshot.calls.length);
+  await expect(page.locator("#calls .call")).toHaveCount(expectedCalls);
+  const expectedLinks = snapshot.calls.filter((call) => call.assigned).slice(0, 16).length;
+  await expect(page.locator("#assignment-overlay line")).toHaveCount(expectedLinks);
+
+  const latestDecision = snapshot.decision_tail.at(-1);
+  expect(latestDecision).toBeTruthy();
+  const candidateRows = latestDecision.candidates || latestDecision.evaluations || [];
+  await expect(page.locator("#decision-candidates tr")).toHaveCount(candidateRows.length);
+  await expect(page.locator("#decision-reason")).not.toHaveText("Waiting for the first dispatch decision…");
+
+  expect(snapshot.metrics.reassignments).toBeGreaterThan(0);
+  await expect(page.locator("#event-stream .event-reassign")).toBeVisible();
 
   for (const car of snapshot.elevators) {
     const locator = page.locator(`[data-car-id="${car.id}"]`);
@@ -76,6 +100,12 @@ test("live UI and deterministic replay match API state", async ({ page, request 
   await page.locator("#return-live").click();
   await expect(page.locator("#clock")).toHaveText(snapshot.clock);
   await expect(page.locator("#live-state span")).toHaveText("PAUSED");
+
+  const evidenceResponse = await request.get("/api/experiment");
+  const evidence = await evidenceResponse.json();
+  const lunchCollective = evidence.baseline.scenarios.lunch.policies.collective;
+  await expect(page.locator('#comparison-cards .comparison-card[data-policy="collective"] > strong'))
+    .toHaveText(`${Number(lunchCollective.avg_wait).toFixed(2)}s`);
 
   await page.screenshot({ path: "artifacts/m4-dashboard-desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

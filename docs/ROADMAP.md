@@ -64,9 +64,10 @@ first evidence interpretation; CAPR is traffic-regime dependent rather than glob
 - [x] decision inspector and dispatch event stream;
 - [x] responsive visual QA and committed screenshot evidence.
 
-**Gate:** no chart uses fabricated values. Playwright runs a real evening/CAPR simulation, pauses it,
-compares visible clock/queue/wait metrics, all six cars and all 18 floor queue cells against
-`/api/snapshot`, saves the run, then repeats the comparison against `/api/replay`. Desktop and
+**Gate:** no chart uses fabricated values. Playwright runs a real shock/CAPR simulation through a
+predictive reassignment, pauses it, compares visible clock/queue/wait metrics, all six cars, active
+calls/assignment links, decision candidates and all 18 floor queue cells against `/api/snapshot`,
+saves the run, then repeats the comparison against `/api/replay`. Desktop and
 390px mobile screenshots come from that verified browser run; the desktop image is preserved at
 `docs/assets/m4-dashboard.png` for README visual QA.
 

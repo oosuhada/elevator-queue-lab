@@ -294,7 +294,7 @@ select:focus { border-color: rgba(77,215,209,.55); box-shadow: 0 0 0 2px rgba(77
   line-height: 1.08;
   letter-spacing: -.035em;
 }
-.theory-takeaway-copy p { margin: 7px 0 0; color: #a5bdc9; font-size: 10px; line-height: 1.55; }
+.theory-takeaway-copy p { margin: 7px 0 0; color: #a5bdc9; font-size: 13px; line-height: 1.65; }
 .theory-takeaway-copy p b { color: #9af0e6; }
 .theory-takeaway-example {
   display: grid;
@@ -317,7 +317,7 @@ select:focus { border-color: rgba(77,215,209,.55); box-shadow: 0 0 0 2px rgba(77
 .theory-takeaway-example small { color: #6d8797; font-size: 7px; line-height: 1.35; }
 .theory-takeaway-example > i { color: #70cfc9; font-style: normal; font-size: 16px; }
 .theory-intro { display: grid; grid-template-columns: minmax(300px,.8fr) minmax(0,1.2fr); gap: 12px; align-items: stretch; }
-.theory-intro > p { margin: 0; padding: 12px 13px; border: 1px solid rgba(94,128,148,.13); border-radius: 10px; background: rgba(7,18,27,.52); color: #829aaa; font-size: 9px; line-height: 1.6; }
+.theory-intro > p { margin: 0; padding: 12px 13px; border: 1px solid rgba(94,128,148,.13); border-radius: 10px; background: rgba(7,18,27,.52); color: #829aaa; font-size: 12px; line-height: 1.7; }
 .theory-intro > p b { color: #c6d8e2; }
 .theory-formula-card { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid rgba(77,215,209,.25); border-radius: 10px; background: linear-gradient(135deg, rgba(22,74,82,.28), rgba(8,22,31,.78)); }
 .theory-formula-card span { color: #72bfc5; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
@@ -369,7 +369,7 @@ select:focus { border-color: rgba(77,215,209,.55); box-shadow: 0 0 0 2px rgba(77
 .canonical-theory-row span { color: #6f8798; font-size: 7px; text-transform: uppercase; }
 .canonical-theory-row strong { color: #c9dbe4; font-size: 14px; font-variant-numeric: tabular-nums; }
 .canonical-theory-row small { color: #607989; font-size: 7px; }
-.theory-caveat { margin: 10px 0 0; padding: 9px 11px; border-left: 2px solid var(--amber); background: rgba(241,184,106,.035); color: #718a9a; font-size: 8px; line-height: 1.55; }
+.theory-caveat { margin: 10px 0 0; padding: 11px 13px; border-left: 2px solid var(--amber); background: rgba(241,184,106,.035); color: #718a9a; font-size: 12px; line-height: 1.65; }
 .theory-caveat b { color: #d2bea0; }
 
 .methodology-strip { margin-top: 14px; padding: 14px 16px; display: grid; grid-template-columns: 1.3fr repeat(3,.7fr) 2fr; gap: 15px; align-items: center; }

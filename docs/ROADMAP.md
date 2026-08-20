@@ -9,8 +9,8 @@ session can immediately continue from the first open, unblocked issue.
 - [x] seeded office demand generator;
 - [x] six-car zoned simulation foundation;
 - [x] initial sticky/collective/queue-aware policies;
-- [ ] deterministic trace export/import so every controller sees identical passengers;
-- [ ] event ledger for arrival/assign/reassign/board/alight/full-pass actions.
+- [x] deterministic trace export/import so every controller sees identical passengers;
+- [x] event ledger for arrival/assign/reassign/board/alight/full-pass actions.
 
 **Gate:** same seed must yield byte-equivalent demand trace; event counts must reconcile with
 passenger lifecycle counts.

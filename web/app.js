@@ -5,6 +5,7 @@ const shafts = document.querySelector("#shafts");
 const controls = {
   scenario: document.querySelector("#scenario"),
   policy: document.querySelector("#policy"),
+  controlMode: document.querySelector("#control-mode"),
   speed: document.querySelector("#speed"),
   pause: document.querySelector("#pause"),
   reset: document.querySelector("#reset"),
@@ -49,6 +50,9 @@ function fmtSeconds(value) {
 }
 
 function render(snapshot) {
+  controls.scenario.value = snapshot.scenario;
+  controls.policy.value = snapshot.policy;
+  controls.controlMode.value = snapshot.simulation_config?.control_mode || "conventional";
   document.querySelector("#clock").textContent = snapshot.clock;
   const minutes = Math.floor(snapshot.sim_time / 60);
   const seconds = snapshot.sim_time % 60;
@@ -65,6 +69,7 @@ function render(snapshot) {
   document.querySelector("#queue").textContent = String(m.current_queue);
   document.querySelector("#avg-queue").textContent = `Lq avg ${Number(m.avg_queue).toFixed(2)}`;
   document.querySelector("#misses").textContent = String(m.missed_capacity);
+  document.querySelector("#reassignments").textContent = `${Number(m.reassignments || 0)} predictive reassignments`;
   document.querySelector("#served").textContent = `${m.served} served`;
   document.querySelector("#lq-observed").textContent = Number(m.avg_queue).toFixed(2);
   document.querySelector("#lq-derived").textContent = Number(m.little_law_lq).toFixed(2);
@@ -98,9 +103,20 @@ function render(snapshot) {
       .slice()
       .sort((a, b) => b.wait - a.wait)
       .slice(0, 12)
-      .map((call) => `<span class="call"><b>${call.floor}F ${call.direction > 0 ? "↑" : "↓"} · ${call.bank}</b><span>→ ${call.assigned || "unassigned"}</span><span class="wait">${call.wait.toFixed(0)}s</span>${call.missed ? `<span>miss ${call.missed}</span>` : ""}</span>`)
+      .map((call) => {
+        const destination = call.destination ? ` → ${call.destination}F` : "";
+        const score = call.assigned_score == null ? "" : ` · score ${Number(call.assigned_score).toFixed(1)}`;
+        return `<span class="call"><b>${call.floor}F ${call.direction > 0 ? "↑" : "↓"}${destination} · ${call.bank}</b><span>→ ${call.assigned || "unassigned"}${score}</span><span class="wait">${call.wait.toFixed(0)}s</span>${call.missed ? `<span>miss ${call.missed}</span>` : ""}</span>`;
+      })
       .join("");
   }
+
+  const decisionReason = document.querySelector("#decision-reason");
+  const latestDecision = snapshot.decision_tail?.at(-1);
+  decisionReason.textContent = latestDecision
+    ? `Latest: ${latestDecision.reason}`
+    : "Waiting for the first dispatch decision…";
+
   drawChart(snapshot.history);
 }
 
@@ -126,7 +142,10 @@ function drawChart(history) {
   ctx.lineWidth = ratio;
   for (let i = 0; i <= 4; i += 1) {
     const y = pad + (plotH * i) / 4;
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pad, y);
+    ctx.lineTo(width - pad, y);
+    ctx.stroke();
   }
   if (history.length < 2) return;
 
@@ -137,7 +156,8 @@ function drawChart(history) {
     history.forEach((point, index) => {
       const x = pad + (index / (history.length - 1)) * plotW;
       const y = pad + plotH - (Number(point[field]) / max) * plotH;
-      if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
     ctx.stroke();
   };
@@ -153,14 +173,18 @@ async function sendControl(action) {
       action,
       scenario: controls.scenario.value,
       policy: controls.policy.value,
+      control_mode: controls.controlMode.value,
       speed: Number(controls.speed.value),
     }),
   });
-  render(await response.json());
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "control request failed");
+  render(payload);
 }
 
 controls.scenario.addEventListener("change", () => sendControl("reset"));
 controls.policy.addEventListener("change", () => sendControl("reset"));
+controls.controlMode.addEventListener("change", () => sendControl("reset"));
 controls.speed.addEventListener("change", () => sendControl("update"));
 controls.reset.addEventListener("click", () => sendControl("reset"));
 controls.pause.addEventListener("click", async () => {
@@ -180,4 +204,3 @@ async function refresh() {
 buildBuilding();
 refresh();
 setInterval(refresh, 300);
-

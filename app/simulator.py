@@ -7,6 +7,7 @@ from collections import defaultdict
 from .demand import DemandModel
 from .domain import Elevator, HallCall, Metrics, Passenger, SimulationConfig
 from .events import EventLedger
+from .physics import MotionProfile, service_dwell_seconds
 from .policies import DispatchPolicy, QueueWeights, build_policy
 from .trace import PassengerTrace
 
@@ -30,6 +31,8 @@ class ElevatorSimulation:
             raise ValueError("Passenger trace scenario must match simulation scenario")
         self.trace = trace
         self._trace_index = 0
+        self._last_demand_second = 0
+        self._last_sample_second = 0
         self.policy_name = policy_name
         self.policy: DispatchPolicy = build_policy(policy_name, weights)
         self.sim_time = 0.0
@@ -66,56 +69,77 @@ class ElevatorSimulation:
         return elevators
 
     def step(self, seconds: int = 1) -> None:
-        for _ in range(seconds):
-            self.sim_time += 1.0
+        if seconds < 0:
+            raise ValueError("seconds must be non-negative")
+        end_time = self.sim_time + seconds
+        while self.sim_time + 1e-9 < end_time:
+            dt = min(self.config.time_step_seconds, end_time - self.sim_time)
+            self.sim_time = round(self.sim_time + dt, 9)
+            self._generate_due_demand()
+            self._expire_impatient_passengers()
             self._expire_sticky_blocks()
-            self._generate_demand()
             self._dispatch_calls()
             for elevator in self.elevators:
-                self._move_elevator(elevator, 1.0)
+                self._advance_elevator(elevator, dt)
             self._dispatch_calls()
-            self.metrics.queue_samples.append(len(self.waiting))
-            if int(self.sim_time) % 15 == 0:
-                metric = self.metrics.snapshot(self.sim_time)
-                metric["sim_time"] = int(self.sim_time)
-                self.history.append(metric)
-                if len(self.history) > 240:
-                    self.history = self.history[-240:]
+            self._sample_due_metrics()
 
     def run(self, seconds: int) -> dict[str, float | int]:
         self.step(seconds)
         return self.metrics.snapshot(self.sim_time)
 
-    def _generate_demand(self) -> None:
+    def _generate_due_demand(self) -> None:
+        current_second = int(self.sim_time + 1e-9)
+        while self._last_demand_second < current_second:
+            self._last_demand_second += 1
+            self._generate_demand_for_second(self._last_demand_second)
+
+    def _generate_demand_for_second(self, second: int) -> None:
         if self.trace is not None:
-            now = int(self.sim_time)
             while self._trace_index < len(self.trace.events):
                 event = self.trace.events[self._trace_index]
-                if event.at > now:
+                if event.at > second:
                     break
-                if event.at == now:
-                    self._create_passenger(event.passenger_id, event.origin, event.destination)
+                if event.at == second:
+                    self._create_passenger(
+                        event.passenger_id,
+                        event.origin,
+                        event.destination,
+                        created_at=float(second),
+                    )
                 self._trace_index += 1
             return
 
         for _ in range(self.demand.arrivals_this_second()):
             origin, destination = self.demand.trip()
-            self._create_passenger(self.next_passenger_id, origin, destination)
+            self._create_passenger(
+                self.next_passenger_id,
+                origin,
+                destination,
+                created_at=float(second),
+            )
             self.next_passenger_id += 1
 
-    def _create_passenger(self, passenger_id: int, origin: int, destination: int) -> None:
+    def _create_passenger(
+        self,
+        passenger_id: int,
+        origin: int,
+        destination: int,
+        *,
+        created_at: float,
+    ) -> None:
         passenger = Passenger(
             passenger_id=passenger_id,
             origin=origin,
             destination=destination,
-            created_at=self.sim_time,
+            created_at=created_at,
         )
         self.next_passenger_id = max(self.next_passenger_id, passenger_id + 1)
         self.waiting.append(passenger)
         self.metrics.arrival_count += 1
         bank = self._bank_for_trip(origin, destination)
         self.ledger.record(
-            self.sim_time,
+            created_at,
             "arrival",
             passenger_id=passenger_id,
             floor=origin,
@@ -128,7 +152,7 @@ class ElevatorSimulation:
                 floor=origin,
                 direction=passenger.direction,
                 bank=bank,
-                created_at=self.sim_time,
+                created_at=created_at,
             )
 
     def _dispatch_calls(self) -> None:
@@ -181,45 +205,124 @@ class ElevatorSimulation:
         ]
         return compatible
 
-    def _move_elevator(self, elevator: Elevator, dt: float) -> None:
-        if elevator.door_timer > 0:
-            elevator.door_timer = max(0.0, elevator.door_timer - dt)
+    def _advance_elevator(self, elevator: Elevator, dt: float) -> None:
+        if elevator.phase == "idle":
+            self._remove_stale_pickup_stops(elevator)
+            if not elevator.stops:
+                self._maybe_reposition(elevator)
+            if not elevator.stops:
+                elevator.direction = 0
+                return
+            self._begin_trip(elevator, elevator.stops[0])
+
+        if elevator.phase == "moving":
+            self._advance_motion(elevator, dt)
             return
 
-        self._remove_stale_pickup_stops(elevator)
-        if not elevator.stops:
-            self._maybe_reposition(elevator)
-        if not elevator.stops:
-            elevator.direction = 0
+        if elevator.phase.startswith("door_"):
+            self._advance_door_phase(elevator, dt)
+
+    def _begin_trip(self, elevator: Elevator, target: int) -> None:
+        elevator.target_floor = target
+        delta_floors = target - elevator.floor
+        if abs(delta_floors) < 1e-9:
+            elevator.phase = "door_opening"
+            elevator.phase_timer = self.config.levelling_seconds + self.config.door_open_seconds
             return
 
-        target = elevator.stops[0]
-        delta = target - elevator.floor
-        if abs(delta) < 1e-9:
-            self._service_floor(elevator, target)
-            return
+        elevator.direction = 1 if delta_floors > 0 else -1
+        distance_m = abs(delta_floors) * self.config.floor_height_m
+        profile = MotionProfile.build(
+            distance_m,
+            self.config.max_speed_mps,
+            self.config.acceleration_mps2,
+        )
+        elevator.phase = "moving"
+        elevator.travel_start_floor = elevator.floor
+        elevator.travel_elapsed = 0.0
+        elevator.travel_duration = profile.duration_s
+        self.ledger.record(
+            self.sim_time,
+            "car_depart",
+            elevator_id=elevator.elevator_id,
+            floor=int(round(elevator.floor)),
+            bank=elevator.bank,
+            details={"target_floor": target, "travel_duration": round(profile.duration_s, 4)},
+        )
 
-        elevator.direction = 1 if delta > 0 else -1
-        movement = dt / self.config.travel_seconds_per_floor
+    def _advance_motion(self, elevator: Elevator, dt: float) -> None:
+        if elevator.target_floor is None or elevator.travel_start_floor is None:
+            raise RuntimeError("moving elevator has no travel target")
+        start = elevator.travel_start_floor
+        target = elevator.target_floor
+        distance_m = abs(target - start) * self.config.floor_height_m
+        profile = MotionProfile.build(
+            distance_m,
+            self.config.max_speed_mps,
+            self.config.acceleration_mps2,
+        )
         old_floor = elevator.floor
-        if abs(delta) <= movement:
-            elevator.floor = float(target)
-        else:
-            elevator.floor += elevator.direction * movement
+        elevator.travel_elapsed = min(profile.duration_s, elevator.travel_elapsed + dt)
+        fraction = profile.fraction_at(elevator.travel_elapsed)
+        elevator.floor = start + (target - start) * fraction
         elevator.distance_travelled += abs(elevator.floor - old_floor)
 
-        if math.isclose(elevator.floor, float(target), abs_tol=1e-9):
-            self._service_floor(elevator, target)
+        if elevator.travel_elapsed + 1e-9 >= profile.duration_s:
+            elevator.floor = float(target)
+            elevator.phase = "door_opening"
+            elevator.phase_timer = self.config.levelling_seconds + self.config.door_open_seconds
+            self.ledger.record(
+                self.sim_time,
+                "car_arrive",
+                elevator_id=elevator.elevator_id,
+                floor=target,
+                bank=elevator.bank,
+            )
 
-    def _service_floor(self, elevator: Elevator, floor: int) -> None:
+    def _advance_door_phase(self, elevator: Elevator, dt: float) -> None:
+        elevator.phase_timer = max(0.0, elevator.phase_timer - dt)
+        if elevator.phase_timer > 1e-9:
+            return
+
+        if elevator.phase == "door_opening":
+            if elevator.target_floor is None:
+                raise RuntimeError("door opening without a target floor")
+            transfer_count = self._service_floor(elevator, elevator.target_floor)
+            elevator.phase = "door_dwell"
+            elevator.phase_timer = service_dwell_seconds(
+                transfer_count,
+                self.config.door_dwell_seconds,
+                self.config.passenger_transfer_seconds,
+            )
+            return
+
+        if elevator.phase == "door_dwell":
+            elevator.phase = "door_closing"
+            elevator.phase_timer = self.config.door_close_seconds
+            return
+
+        if elevator.phase == "door_closing":
+            elevator.phase = "idle"
+            elevator.phase_timer = 0.0
+            elevator.target_floor = None
+            elevator.travel_start_floor = None
+            elevator.travel_elapsed = 0.0
+            elevator.travel_duration = 0.0
+            if not elevator.stops:
+                elevator.direction = 0
+            return
+
+    def _service_floor(self, elevator: Elevator, floor: int) -> int:
         if elevator.stops and elevator.stops[0] == floor:
             elevator.stops.pop(0)
 
         remaining_onboard: list[Passenger] = []
+        alighted_count = 0
         for passenger in elevator.onboard:
             if passenger.destination == floor:
                 passenger.arrived_at = self.sim_time
                 self.metrics.served_count += 1
+                alighted_count += 1
                 if passenger.boarded_at is not None:
                     self.metrics.ride_times.append(self.sim_time - passenger.boarded_at)
                 self.ledger.record(
@@ -235,7 +338,7 @@ class ElevatorSimulation:
         elevator.onboard = remaining_onboard
 
         available = elevator.capacity - len(elevator.onboard)
-        boarded_any = False
+        boarded_count = 0
         waiting_after: list[Passenger] = []
         blocked_calls: set[tuple[int, int, str]] = set()
         for passenger in self.waiting:
@@ -257,7 +360,7 @@ class ElevatorSimulation:
                 elevator.onboard.append(passenger)
                 elevator.add_stop(passenger.destination)
                 available -= 1
-                boarded_any = True
+                boarded_count += 1
                 self.ledger.record(
                     self.sim_time,
                     "board",
@@ -301,13 +404,8 @@ class ElevatorSimulation:
             else:
                 self.hall_calls.pop(key, None)
 
-        if boarded_any or floor in {passenger.destination for passenger in remaining_onboard}:
-            elevator.door_timer = self.config.door_dwell_seconds
-        else:
-            # Pickup stops still open their doors even when the queue vanished a moment ago.
-            elevator.door_timer = self.config.door_dwell_seconds
-
         self._sort_route(elevator)
+        return boarded_count + alighted_count
 
     def _sort_route(self, elevator: Elevator) -> None:
         if not elevator.stops:
@@ -360,6 +458,28 @@ class ElevatorSimulation:
             if call.blocked_until <= self.sim_time and call.assigned_elevator is None:
                 call.blocked_until = 0.0
 
+    def _expire_impatient_passengers(self) -> None:
+        patience = self.config.passenger_patience_seconds
+        if patience is None:
+            return
+        kept: list[Passenger] = []
+        for passenger in self.waiting:
+            waited = self.sim_time - passenger.created_at
+            if waited + 1e-9 < patience:
+                kept.append(passenger)
+                continue
+            self.metrics.abandoned_count += 1
+            bank = self._bank_for_trip(passenger.origin, passenger.destination)
+            self.ledger.record(
+                self.sim_time,
+                "abandon",
+                passenger_id=passenger.passenger_id,
+                floor=passenger.origin,
+                bank=bank,
+                details={"destination": passenger.destination, "waited": round(waited, 4)},
+            )
+        self.waiting = kept
+
     def _waiting_for_call(self, key: tuple[int, int, str]) -> bool:
         floor, direction, bank = key
         return any(
@@ -373,15 +493,28 @@ class ElevatorSimulation:
         non_lobby_floor = destination if origin == 1 else origin
         return "low" if non_lobby_floor <= self.config.low_zone_max else "high"
 
+    def _sample_due_metrics(self) -> None:
+        current_second = int(self.sim_time + 1e-9)
+        while self._last_sample_second < current_second:
+            self._last_sample_second += 1
+            self.metrics.queue_samples.append(len(self.waiting))
+            if self._last_sample_second % 15 == 0:
+                metric = self.metrics.snapshot(float(self._last_sample_second))
+                metric["sim_time"] = self._last_sample_second
+                self.history.append(metric)
+                if len(self.history) > 240:
+                    self.history = self.history[-240:]
+
     def audit(self) -> dict[str, object]:
         event_counts = self.ledger.counts()
         onboard = sum(len(elevator.onboard) for elevator in self.elevators)
         waiting = len(self.waiting)
         arrived = self.metrics.arrival_count
         served = self.metrics.served_count
+        abandoned = self.metrics.abandoned_count
         boarded = len(self.metrics.wait_times)
         violations: list[str] = []
-        if arrived != waiting + onboard + served:
+        if arrived != waiting + onboard + served + abandoned:
             violations.append("passenger_conservation")
         if boarded != onboard + served:
             violations.append("boarded_conservation")
@@ -391,8 +524,16 @@ class ElevatorSimulation:
             violations.append("board_event_count")
         if event_counts.get("alight", 0) != served:
             violations.append("alight_event_count")
+        if event_counts.get("abandon", 0) != abandoned:
+            violations.append("abandon_event_count")
         if any(len(elevator.onboard) > elevator.capacity for elevator in self.elevators):
             violations.append("capacity_overflow")
+        if any(wait < 0 for wait in self.metrics.wait_times):
+            violations.append("negative_wait_time")
+        if any(ride < 0 for ride in self.metrics.ride_times):
+            violations.append("negative_ride_time")
+        if any(not (1.0 <= elevator.floor <= self.config.floors) for elevator in self.elevators):
+            violations.append("car_outside_building")
         return {
             "ok": not violations,
             "violations": violations,
@@ -400,6 +541,7 @@ class ElevatorSimulation:
             "waiting": waiting,
             "onboard": onboard,
             "served": served,
+            "abandoned": abandoned,
             "boarded": boarded,
             "event_counts": event_counts,
         }
@@ -432,7 +574,9 @@ class ElevatorSimulation:
                     "load": len(elevator.onboard),
                     "capacity": elevator.capacity,
                     "stops": list(elevator.stops),
-                    "door_open": elevator.door_timer > 0,
+                    "door_open": elevator.phase in {"door_opening", "door_dwell", "door_closing"},
+                    "phase": elevator.phase,
+                    "target_floor": elevator.target_floor,
                 }
                 for elevator in self.elevators
             ],
@@ -452,5 +596,6 @@ class ElevatorSimulation:
             "audit": self.audit(),
             "event_tail": self.ledger.tail(),
             "trace_digest": self.trace.digest if self.trace is not None else None,
+            "simulation_config": self.config.as_dict(),
         }
 

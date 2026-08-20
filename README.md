@@ -13,6 +13,12 @@ normal traffic and evening departure. Every passenger is represented from arriva
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
+![Elevator Queue Lab live digital twin](docs/assets/m4-dashboard.png)
+
+The screenshot above is captured from the real simulator UI in CI after the browser test verifies
+that visible car, queue and service-quality state matches the API. It is not a mockup or static
+chart fixture.
+
 ## Research question
 
 > Can continuous capacity-aware reassignment and demand-aware pre-positioning reduce both average
@@ -34,12 +40,17 @@ superiority**.
 - route-insertion ETA, predicted pickup capacity, call-age scoring and demand-aware parking;
 - assignment/reassignment decision ledger containing candidate scores and human-readable reasons;
 - regression coverage for the motivating **17F full car / 16F waiting passenger** case;
-- live digital-twin view of floors, cars, queues, load, assignments, wait metrics and CAPR decisions;
+- portfolio-grade 18-floor live digital twin with car phase/load/route, queue badges and assignment links;
+- floor queue heatmap plus live/replay wait and queue time series sourced only from simulator state;
+- dispatch event stream and candidate-level decision inspector for assignment/reassignment reasoning;
+- deterministic saved-run replay with a timeline scrubber and live/replay state switching;
 - 30-seed common-random-number experiment engine with morning/lunch/normal/evening/shock/mixed-day;
 - P50/P95/P99 wait, journey time, throughput, unfinished queue, reassignment latency, floor fairness,
   capacity misses and a transparent comparative energy proxy;
+- M3 policy-comparison cards exposed in the UI from the checked-in regression evidence baseline;
 - JSON + run-level CSV + summary CSV evidence artifacts, paired effect sizes and guardrail flags;
-- checked-in statistical regression baseline enforced by GitHub Actions.
+- Playwright browser verification that visible metrics, all six cars and all 18 floor queues match API/replay state;
+- responsive desktop/mobile visual QA with screenshots generated from that same verified browser run.
 
 ## First 30-seed evidence: CAPR is regime-dependent
 
@@ -62,14 +73,15 @@ simulation results, **not real-building performance claims**.
 
 ## Run locally
 
-Python 3.11+ is enough for the current simulator/controller lab.
+Python 3.11+ is enough for the simulator and research server.
 
 ```bash
 python -m app.server --port 4173
 ```
 
-Open `http://127.0.0.1:4173`. The live UI can switch traffic regime, policy, simulation speed, and
-conventional versus destination-control call input.
+Open `http://127.0.0.1:4173`. The UI can switch traffic regime, policy, simulation speed and
+conventional versus destination-control call input, save the current run, scrub deterministic
+replay frames and inspect the M3 comparison evidence.
 
 Run validation and evidence generation:
 
@@ -82,16 +94,25 @@ python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evid
 python scripts/check_regression_baseline.py evidence/m3-evidence.json
 ```
 
+For browser/API visual verification:
+
+```bash
+npm install
+npx playwright install chromium
+python -m app.server --port 4173
+npm run test:e2e
+```
+
 The matrix command emits a self-describing JSON artifact plus `*.runs.csv` and `*.summary.csv`.
 Artifacts explicitly record a zero-second warm-up and the measurement window used by the run.
 
 ## Project status
 
-**M0 reproducibility, M1 simulator physics, M2 controller laboratory and M3 statistical evidence
-engine are implemented.** The next milestone is M4: turn the current live simulator into a
-release-quality digital twin with experiment comparison, heatmaps and deterministic replay.
-`docs/ROADMAP.md` is the canonical work queue and `AGENTS.md` defines the continuation contract for
-future coding sessions.
+**M0 reproducibility, M1 simulator physics, M2 controller laboratory, M3 statistical evidence and
+M4 live digital twin/replay are implemented.** M5 is the next research gate: build a learned
+elevator-group controller under the same deterministic traces and evaluate it on held-out traffic
+without relaxing the fairness or energy guardrails. `docs/ROADMAP.md` is the canonical work queue
+and `AGENTS.md` defines the continuation contract for future coding sessions.
 
 ## Methodology references
 

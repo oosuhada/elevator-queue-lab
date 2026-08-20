@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.simulator import ElevatorSimulation
+from app.trace import generate_trace
 
 
 POLICIES = ("legacy_sticky", "collective", "queue_aware")
@@ -25,10 +26,16 @@ def confidence95(values: list[float]) -> float:
 
 def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]:
     rows: list[dict[str, object]] = []
+    traces = {seed: generate_trace(scenario, seconds, seed) for seed in range(1, seeds + 1)}
     for policy in POLICIES:
         runs: list[dict[str, float | int]] = []
         for seed in range(1, seeds + 1):
-            simulation = ElevatorSimulation(scenario=scenario, policy_name=policy, seed=seed)
+            simulation = ElevatorSimulation(
+                scenario=scenario,
+                policy_name=policy,
+                seed=seed,
+                trace=traces[seed],
+            )
             runs.append(simulation.run(seconds))
         waits = [float(run["avg_wait"]) for run in runs]
         p95s = [float(run["p95_wait"]) for run in runs]
@@ -48,6 +55,7 @@ def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]
         "seconds": seconds,
         "seeds": seeds,
         "common_seed_range": [1, seeds],
+        "trace_digests": {str(seed): trace.digest for seed, trace in traces.items()},
         "results": rows,
     }
 

@@ -26,6 +26,7 @@ class HallCall:
     assigned_elevator: str | None = None
     missed_count: int = 0
     blocked_until: float = 0.0
+    last_assigned_elevator: str | None = None
 
     @property
     def key(self) -> tuple[int, int, str]:

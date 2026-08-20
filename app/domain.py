@@ -31,6 +31,7 @@ class HallCall:
     blocked_until: float = 0.0
     last_assigned_elevator: str | None = None
     last_evaluated_at: float = 0.0
+    reassignment_count: int = 0
 
     @property
     def key(self) -> tuple[int, int, str, int | None]:
@@ -96,8 +97,10 @@ class SimulationConfig:
     passenger_patience_seconds: float | None = None
     control_mode: str = "conventional"
     reassignment_interval_seconds: float = 1.0
-    reassignment_cooldown_seconds: float = 2.0
-    reassignment_min_gain: float = 2.0
+    reassignment_cooldown_seconds: float = 6.0
+    reassignment_min_gain: float = 8.0
+    reassignment_min_eta_gain_seconds: float = 5.0
+    max_noncapacity_reassignments_per_call: int = 1
     capacity_reserve: int = 1
 
     def __post_init__(self) -> None:
@@ -109,6 +112,14 @@ class SimulationConfig:
             raise ValueError("elevator_capacity must be positive")
         if self.capacity_reserve < 0:
             raise ValueError("capacity_reserve cannot be negative")
+        if self.reassignment_interval_seconds <= 0:
+            raise ValueError("reassignment_interval_seconds must be positive")
+        if self.reassignment_cooldown_seconds < 0:
+            raise ValueError("reassignment_cooldown_seconds cannot be negative")
+        if self.reassignment_min_gain < 0 or self.reassignment_min_eta_gain_seconds < 0:
+            raise ValueError("reassignment gain thresholds cannot be negative")
+        if self.max_noncapacity_reassignments_per_call < 0:
+            raise ValueError("max_noncapacity_reassignments_per_call cannot be negative")
 
     def as_dict(self) -> dict[str, float | int | str | None]:
         return asdict(self)

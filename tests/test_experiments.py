@@ -87,6 +87,10 @@ class ExperimentTests(unittest.TestCase):
         }
         self.assertEqual(expected, measurement_window(30))
         payload = run_experiment("normal", 30, 1)
+        self.assertEqual(
+            {"lobby_linked": 0.85, "rooftop_linked": 0.10, "interfloor": 0.05},
+            payload["demand_contract"]["trip_purpose_share"],
+        )
         self.assertEqual(expected, payload["measurement_window"])
         scenario = payload["scenario_matrix"][0]
         self.assertEqual(expected, scenario["measurement_window"])

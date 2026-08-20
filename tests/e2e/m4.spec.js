@@ -16,6 +16,11 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   await expect(page.locator("#policy-ranking-body tr").first()).toHaveAttribute("data-policy", "capr");
   await expect(page.locator("#comparison-cards .comparison-card").first()).toHaveAttribute("data-policy", "capr");
   await expect(page.locator("#policy-leaders .policy-leader.primary strong")).toHaveText("CAPR");
+  await expect(page.locator("#theory-leaders .theory-leader")).toHaveCount(4);
+  await expect(page.locator('#theory-scatter [data-kind="discovery"]')).toHaveCount(40);
+  await expect(page.locator('#theory-scatter [data-kind="validation"]')).toHaveCount(18);
+  await expect(page.locator("#theory-rule strong")).toContainText("0.158");
+  await expect(page.locator("#theory-caveat")).toContainText("fuzzy phase transition");
 
   await page.locator("#evidence-scenario").selectOption("mixed_day");
   await expect(page.locator("#policy-ranking-body tr").first()).toHaveAttribute("data-policy", "collective");
@@ -126,6 +131,11 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   const lunchCollective = evidence.baseline.scenarios.lunch.policies.collective;
   await expect(page.locator('#comparison-cards .comparison-card[data-policy="collective"] > strong'))
     .toHaveText(`${Number(lunchCollective.avg_wait).toFixed(2)}s`);
+  const theoryResponse = await request.get("/api/theory");
+  const theory = await theoryResponse.json();
+  expect(theory.discovery.cells).toHaveLength(40);
+  expect(theory.validation.cells).toHaveLength(18);
+  expect(theory.validation.result.recall).toBe(1);
 
   await page.screenshot({ path: "artifacts/m4-dashboard-desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -133,6 +143,8 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   await expect(page.locator("#comparison-cards")).toBeVisible();
   await expect(page.locator("#policy-density-chart")).toBeVisible();
   await expect(page.locator("#policy-ranking-body tr")).toHaveCount(5);
+  await expect(page.locator("#theory-scatter")).toBeVisible();
+  await expect(page.locator("#canonical-theory-row article")).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: "artifacts/m4-dashboard-mobile.png", fullPage: true });
 });

@@ -181,6 +181,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if parsed.path == "/api/health":
+            return self._send_json(
+                {
+                    "schema": "elevator-queue-lab.health.v1",
+                    "status": "ok",
+                }
+            )
         if parsed.path == "/api/snapshot":
             return self._send_json(self.runner.snapshot())
         if parsed.path == "/api/replay":

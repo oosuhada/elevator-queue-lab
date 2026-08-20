@@ -10,6 +10,18 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(baseURL);
   await expect(page.locator("#comparison-cards .comparison-card")).toHaveCount(5);
+  await expect(page.locator("#policy-leaders .policy-leader")).toHaveCount(3);
+  await expect(page.locator("#policy-density-chart .density-series")).toHaveCount(5);
+  await expect(page.locator("#policy-ranking-body tr")).toHaveCount(5);
+  await expect(page.locator("#policy-ranking-body tr").first()).toHaveAttribute("data-policy", "capr");
+  await expect(page.locator("#comparison-cards .comparison-card").first()).toHaveAttribute("data-policy", "capr");
+  await expect(page.locator("#policy-leaders .policy-leader.primary strong")).toHaveText("CAPR");
+
+  await page.locator("#evidence-scenario").selectOption("mixed_day");
+  await expect(page.locator("#policy-ranking-body tr").first()).toHaveAttribute("data-policy", "collective");
+  await expect(page.locator("#policy-leaders .policy-leader.primary strong")).toHaveText("Collective");
+  await expect(page.locator("#policy-leaders .policy-leader").nth(1).locator("strong")).toHaveText("CAPR");
+  await page.locator("#evidence-scenario").selectOption("lunch");
 
   await request.post("/api/control", {
     data: {
@@ -119,5 +131,8 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#building")).toBeVisible();
   await expect(page.locator("#comparison-cards")).toBeVisible();
+  await expect(page.locator("#policy-density-chart")).toBeVisible();
+  await expect(page.locator("#policy-ranking-body tr")).toHaveCount(5);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: "artifacts/m4-dashboard-mobile.png", fullPage: true });
 });

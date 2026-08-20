@@ -26,6 +26,21 @@ let savedReplay = null;
 let latestLiveSnapshot = null;
 let experimentPayload = null;
 
+const EVIDENCE_POLICIES = ["legacy_sticky", "nearest_car", "collective", "queue_aware", "capr"];
+const POLICY_LABELS = {
+  legacy_sticky: "Legacy sticky",
+  nearest_car: "Nearest car",
+  collective: "Collective",
+  queue_aware: "Queue-aware",
+  capr: "CAPR",
+};
+const GUARDRAIL_PRIORITY = {
+  candidate_improvement: 0,
+  reference: 1,
+  mean_improves_with_guardrail_tradeoff: 2,
+  no_mean_improvement: 3,
+};
+
 function floorBottomPercent(floor) {
   return ((floor - 1) / (FLOOR_COUNT - 1)) * 100;
 }
@@ -410,22 +425,187 @@ function populateEvidence() {
   renderEvidenceScenario(select.value);
 }
 
+function evidenceLabel(classification) {
+  return ({
+    candidate_improvement: "clean candidate",
+    reference: "collective reference",
+    mean_improves_with_guardrail_tradeoff: "faster · tradeoff",
+    no_mean_improvement: "no mean gain",
+  })[classification] || classification.replaceAll("_", " ");
+}
+
+function evidenceClassName(classification) {
+  if (classification === "candidate_improvement") return "good";
+  if (classification === "reference") return "reference";
+  if (classification.includes("tradeoff")) return "tradeoff";
+  return "neutral";
+}
+
+function rankedPolicies(scenario) {
+  const entries = EVIDENCE_POLICIES
+    .filter((name) => scenario.policies[name])
+    .map((name) => ({ name, ...scenario.policies[name] }));
+  const speedOrder = [...entries].sort((a, b) =>
+    Number(a.avg_wait) - Number(b.avg_wait)
+      || Number(a.p95_wait) - Number(b.p95_wait)
+      || Number(a.energy_proxy) - Number(b.energy_proxy));
+  const speedRanks = new Map(speedOrder.map((item, index) => [item.name, index + 1]));
+  return entries
+    .sort((a, b) =>
+      (GUARDRAIL_PRIORITY[a.guardrail_classification] ?? 99) - (GUARDRAIL_PRIORITY[b.guardrail_classification] ?? 99)
+        || Number(a.avg_wait) - Number(b.avg_wait)
+        || Number(a.p95_wait) - Number(b.p95_wait)
+        || Number(a.energy_proxy) - Number(b.energy_proxy))
+    .map((item, index) => ({ ...item, decisionRank: index + 1, speedRank: speedRanks.get(item.name) }));
+}
+
+function signedSeconds(value) {
+  const numeric = Number(value || 0);
+  if (Math.abs(numeric) < 0.005) return "±0.00s";
+  return `${numeric > 0 ? "+" : "−"}${Math.abs(numeric).toFixed(2)}s`;
+}
+
+function renderPolicyLeaders(ranked) {
+  const leader = ranked[0];
+  const fastest = [...ranked].sort((a, b) => a.speedRank - b.speedRank)[0];
+  const cleanCandidates = ranked.filter((item) => item.guardrail_classification === "candidate_improvement");
+  const target = document.querySelector("#policy-leaders");
+  target.innerHTML = `
+    <article class="policy-leader primary">
+      <span>Guardrail-aware #1</span>
+      <strong>${POLICY_LABELS[leader.name]}</strong>
+      <small>${evidenceLabel(leader.guardrail_classification)} · ${Number(leader.avg_wait).toFixed(2)}s AWT</small>
+    </article>
+    <article class="policy-leader">
+      <span>Fastest mean wait</span>
+      <strong>${POLICY_LABELS[fastest.name]}</strong>
+      <small>#${fastest.speedRank} speed · ${Number(fastest.avg_wait).toFixed(2)}s${fastest.name === leader.name ? " · same leader" : ` · ${evidenceLabel(fastest.guardrail_classification)}`}</small>
+    </article>
+    <article class="policy-leader">
+      <span>Clean candidates</span>
+      <strong>${cleanCandidates.length}</strong>
+      <small>${cleanCandidates.length ? cleanCandidates.map((item) => POLICY_LABELS[item.name]).join(" · ") : "Collective remains the guardrail-safe reference"}</small>
+    </article>`;
+}
+
+function sampleStandardDeviation(values) {
+  if (values.length < 2) return 0;
+  const center = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - center) ** 2, 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function gaussianKernelDensity(values, x, bandwidth) {
+  if (!values.length || bandwidth <= 0) return 0;
+  const normalizer = values.length * bandwidth * Math.sqrt(2 * Math.PI);
+  return values.reduce((sum, value) => {
+    const z = (x - value) / bandwidth;
+    return sum + Math.exp(-0.5 * z * z);
+  }, 0) / normalizer;
+}
+
+function renderPolicyDensity(ranked) {
+  const svg = document.querySelector("#policy-density-chart");
+  const legend = document.querySelector("#policy-density-legend");
+  const series = ranked
+    .map((item) => ({ ...item, values: (item.avg_wait_seed_values || []).map(Number).filter(Number.isFinite) }))
+    .filter((item) => item.values.length);
+  if (!series.length) {
+    svg.innerHTML = '<text x="380" y="140" text-anchor="middle" class="density-empty">Seed-level distribution evidence unavailable</text>';
+    legend.innerHTML = "";
+    return;
+  }
+
+  const allValues = series.flatMap((item) => item.values);
+  const observedMin = Math.min(...allValues);
+  const observedMax = Math.max(...allValues);
+  const observedSpan = Math.max(1, observedMax - observedMin);
+  const domainMin = Math.max(0, observedMin - observedSpan * 0.08);
+  const domainMax = observedMax + observedSpan * 0.08;
+  const width = 760;
+  const height = 280;
+  const left = 48;
+  const right = 18;
+  const top = 15;
+  const bottom = 44;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const xScale = (value) => left + ((value - domainMin) / (domainMax - domainMin)) * plotWidth;
+
+  const samples = 110;
+  const curves = series.map((item) => {
+    const spread = sampleStandardDeviation(item.values);
+    const bandwidth = Math.max(observedSpan / 45, 1.06 * Math.max(spread, observedSpan / 30) * item.values.length ** -0.2);
+    const points = Array.from({ length: samples + 1 }, (_, index) => {
+      const x = domainMin + (index / samples) * (domainMax - domainMin);
+      return [x, gaussianKernelDensity(item.values, x, bandwidth)];
+    });
+    return { ...item, points };
+  });
+  const maxDensity = Math.max(...curves.flatMap((curve) => curve.points.map(([, density]) => density)), 0.0001);
+  const yScale = (density) => top + plotHeight - (density / maxDensity) * plotHeight * 0.92;
+  const baselineY = top + plotHeight;
+  const ticks = Array.from({ length: 6 }, (_, index) => domainMin + (index / 5) * (domainMax - domainMin));
+
+  const grid = ticks.map((tick) => {
+    const x = xScale(tick);
+    return `<g class="density-grid"><line x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${baselineY}"/><text x="${x.toFixed(2)}" y="${height - 18}" text-anchor="middle">${tick.toFixed(1)}s</text></g>`;
+  }).join("");
+
+  const paths = curves.map((curve) => {
+    const linePath = curve.points.map(([x, density], index) => `${index ? "L" : "M"}${xScale(x).toFixed(2)},${yScale(density).toFixed(2)}`).join(" ");
+    const areaPath = `M${xScale(curve.points[0][0]).toFixed(2)},${baselineY} ${curve.points.map(([x, density]) => `L${xScale(x).toFixed(2)},${yScale(density).toFixed(2)}`).join(" ")} L${xScale(curve.points.at(-1)[0]).toFixed(2)},${baselineY} Z`;
+    const meanX = xScale(Number(curve.avg_wait));
+    const meanDensity = gaussianKernelDensity(curve.values, Number(curve.avg_wait), Math.max(observedSpan / 45, 1.06 * Math.max(sampleStandardDeviation(curve.values), observedSpan / 30) * curve.values.length ** -0.2));
+    return `<g class="density-series density-${curve.name}" data-policy="${curve.name}"><path class="density-area" d="${areaPath}"/><path class="density-line" d="${linePath}"/><circle class="density-mean" cx="${meanX.toFixed(2)}" cy="${yScale(meanDensity).toFixed(2)}" r="3.4"/></g>`;
+  }).join("");
+
+  svg.innerHTML = `${grid}<line class="density-axis" x1="${left}" y1="${baselineY}" x2="${width - right}" y2="${baselineY}"/>${paths}<text class="density-axis-label" x="${width - right}" y="${height - 2}" text-anchor="end">per-seed average wait (seconds) → lower is better</text>`;
+  legend.innerHTML = ranked.map((item) => `<span><i class="density-swatch density-${item.name}"></i><b>#${item.decisionRank}</b>${POLICY_LABELS[item.name]}</span>`).join("");
+}
+
+function renderPolicyRanking(ranked) {
+  const target = document.querySelector("#policy-ranking-body");
+  target.innerHTML = ranked.map((item) => {
+    const ci = Number(item.avg_wait_ci95_halfwidth || 0);
+    const evidenceClass = evidenceClassName(item.guardrail_classification);
+    return `<tr class="rank-${evidenceClass}" data-policy="${item.name}">
+      <td><strong class="decision-rank">#${item.decisionRank}</strong></td>
+      <td><strong>${POLICY_LABELS[item.name]}</strong></td>
+      <td><span class="evidence-pill ${evidenceClass}">${evidenceLabel(item.guardrail_classification)}</span></td>
+      <td><b>${Number(item.avg_wait).toFixed(2)}s</b><small>±${ci.toFixed(2)}s</small></td>
+      <td>${Number(item.p95_wait).toFixed(2)}s</td>
+      <td>${Number(item.p99_wait || 0).toFixed(2)}s</td>
+      <td>${Number(item.worst_floor_mean_wait || 0).toFixed(2)}s</td>
+      <td>${Number(item.energy_proxy).toFixed(0)}</td>
+      <td class="delta ${Number(item.avg_wait_delta_vs_collective || 0) < 0 ? "better" : Number(item.avg_wait_delta_vs_collective || 0) > 0 ? "worse" : ""}">${signedSeconds(item.avg_wait_delta_vs_collective)}</td>
+      <td>#${item.speedRank}</td>
+    </tr>`;
+  }).join("");
+}
+
 function renderEvidenceScenario(scenarioName) {
   const scenario = experimentPayload?.baseline?.scenarios?.[scenarioName];
   if (!scenario) return;
+  const ranked = rankedPolicies(scenario);
+  renderPolicyLeaders(ranked);
   const target = document.querySelector("#comparison-cards");
-  const policyOrder = ["legacy_sticky", "nearest_car", "collective", "queue_aware", "capr"];
-  target.innerHTML = policyOrder.map((name) => {
+  target.innerHTML = ranked.map((rankedItem) => {
+    const name = rankedItem.name;
     const item = scenario.policies[name];
     const classification = item.guardrail_classification;
-    const className = classification === "candidate_improvement" ? "good" : classification === "reference" ? "reference" : classification.includes("tradeoff") ? "tradeoff" : "neutral";
-    return `<article class="comparison-card ${className}" data-policy="${name}"><div><span>${name.replaceAll("_", " ")}</span><b>${classification.replaceAll("_", " ")}</b></div><strong>${Number(item.avg_wait).toFixed(2)}s</strong><small>avg wait</small><dl><div><dt>P95</dt><dd>${Number(item.p95_wait).toFixed(2)}s</dd></div><div><dt>Energy proxy</dt><dd>${Number(item.energy_proxy).toFixed(0)}</dd></div></dl></article>`;
+    const className = evidenceClassName(classification);
+    return `<article class="comparison-card ${className}" data-policy="${name}"><div class="comparison-card-head"><div><span>${POLICY_LABELS[name]}</span><b>${evidenceLabel(classification)}</b></div><i>#${rankedItem.decisionRank}</i></div><strong>${Number(item.avg_wait).toFixed(2)}s</strong><small>avg wait · speed rank #${rankedItem.speedRank}</small><dl><div><dt>95% CI</dt><dd>±${Number(item.avg_wait_ci95_halfwidth || 0).toFixed(2)}s</dd></div><div><dt>P95</dt><dd>${Number(item.p95_wait).toFixed(2)}s</dd></div><div><dt>Energy proxy</dt><dd>${Number(item.energy_proxy).toFixed(0)}</dd></div></dl></article>`;
   }).join("");
+  renderPolicyDensity(ranked);
+  renderPolicyRanking(ranked);
   const capr = scenario.policies.capr;
   const collective = scenario.policies.collective;
   const delta = Number(capr.avg_wait) - Number(collective.avg_wait);
   const note = document.querySelector("#comparison-note");
-  note.innerHTML = `<b>CAPR vs collective:</b> ${delta < 0 ? "lower" : "higher"} mean wait by ${Math.abs(delta).toFixed(2)}s. <span>${capr.guardrail_classification.replaceAll("_", " ")}.</span>`;
+  const leader = ranked[0];
+  const fastest = [...ranked].sort((a, b) => a.speedRank - b.speedRank)[0];
+  note.innerHTML = `<b>Scenario readout:</b> ${POLICY_LABELS[leader.name]} is the guardrail-aware leader; ${POLICY_LABELS[fastest.name]} is fastest by mean AWT. <span>CAPR is ${delta < 0 ? "lower" : "higher"} than collective by ${Math.abs(delta).toFixed(2)}s and is classified “${evidenceLabel(capr.guardrail_classification)}”. Ranking is scenario-specific, not a claim of global superiority.</span>`;
 }
 
 async function loadEvidence() {

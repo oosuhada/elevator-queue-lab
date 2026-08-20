@@ -51,7 +51,9 @@ superiority**.
 - 30-seed common-random-number experiment engine with morning/lunch/normal/evening/shock/mixed-day;
 - P50/P95/P99 wait, journey time, throughput, unfinished queue, reassignment latency, floor fairness,
   capacity misses and a transparent comparative energy proxy;
-- M3 policy-comparison cards exposed in the UI from the checked-in regression evidence baseline;
+- M3 decision dashboard backed by the checked-in regression evidence baseline: guardrail-aware
+  policy ranking, raw speed rank, 95% CI/tail/fairness/energy table and a KDE over the 30 actual
+  per-seed average-wait observations for each dispatch policy;
 - Gymnasium-compatible M5 dispatch MDP with a 77-value observation, seven masked actions and an
   explicit wait/tail/fairness/capacity/energy reward contract;
 - dependency-free Dueling Double DQN learned policy, checked-in model artifact and deterministic

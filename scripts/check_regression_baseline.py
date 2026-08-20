@@ -43,12 +43,54 @@ def check_baseline(generated: dict[str, object], baseline: dict[str, object], to
             if policy is None:
                 failures.append(f"missing policy: {scenario_name}/{policy_name}")
                 continue
-            for metric in ("avg_wait", "p95_wait", "energy_proxy"):
+            for metric in ("avg_wait", "p95_wait", "p99_wait", "worst_floor_mean_wait", "energy_proxy"):
                 observed = float(policy["metrics"][metric]["mean"])
                 target = float(expected_policy[metric])
                 if abs(observed - target) > tolerance:
                     failures.append(
                         f"{scenario_name}/{policy_name}/{metric}: {observed} != {target}"
+                    )
+            avg_wait_summary = policy["metrics"]["avg_wait"]
+            for key, expected_key in (
+                ("ci95_halfwidth", "avg_wait_ci95_halfwidth"),
+                ("min", "avg_wait_min"),
+                ("max", "avg_wait_max"),
+            ):
+                observed = float(avg_wait_summary[key])
+                target = float(expected_policy[expected_key])
+                if abs(observed - target) > tolerance:
+                    failures.append(
+                        f"{scenario_name}/{policy_name}/avg_wait_{key}: {observed} != {target}"
+                    )
+            raw_policy_rows = sorted(
+                (row for row in actual["raw_runs"] if row["policy"] == policy_name),
+                key=lambda row: int(row["seed"]),
+            )
+            observed_seed_values = [float(row["avg_wait"]) for row in raw_policy_rows]
+            expected_seed_values = [float(value) for value in expected_policy["avg_wait_seed_values"]]
+            if len(observed_seed_values) != len(expected_seed_values):
+                failures.append(
+                    f"{scenario_name}/{policy_name}/avg_wait_seed_values length changed: "
+                    f"{len(observed_seed_values)} != {len(expected_seed_values)}"
+                )
+            else:
+                for index, (observed, target) in enumerate(zip(observed_seed_values, expected_seed_values), start=1):
+                    if abs(observed - target) > tolerance:
+                        failures.append(
+                            f"{scenario_name}/{policy_name}/avg_wait_seed_values[{index}]: "
+                            f"{observed} != {target}"
+                        )
+                        break
+            paired_avg_wait = policy["paired_vs_collective"]["avg_wait"]
+            for key, expected_key in (
+                ("delta_mean", "avg_wait_delta_vs_collective"),
+                ("delta_ci95_halfwidth", "avg_wait_delta_ci95_halfwidth"),
+            ):
+                observed = float(paired_avg_wait[key])
+                target = float(expected_policy[expected_key])
+                if abs(observed - target) > tolerance:
+                    failures.append(
+                        f"{scenario_name}/{policy_name}/{key}: {observed} != {target}"
                     )
             observed_guardrail = policy["guardrail_classification"]
             if observed_guardrail != expected_policy["guardrail_classification"]:

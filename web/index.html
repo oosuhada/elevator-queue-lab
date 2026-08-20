@@ -187,9 +187,54 @@
             </div>
             <label class="compact-select"><span>Scenario</span><select id="evidence-scenario"></select></label>
           </div>
-          <p class="section-note">Values below come directly from the checked-in M3 statistical regression baseline. Energy is a comparative proxy, not kWh.</p>
+          <p class="section-note">Values below come directly from the checked-in M3 statistical regression baseline. Decision rank prefers guardrail-clean candidates, then the collective reference, then faster-but-riskier tradeoffs. Energy is a comparative proxy, not kWh.</p>
+          <div id="policy-leaders" class="policy-leaders" aria-label="Policy evidence leaders"></div>
           <div id="comparison-cards" class="comparison-cards"></div>
           <div id="comparison-note" class="comparison-note"></div>
+
+          <div class="policy-insight-grid">
+            <section class="policy-density-card" aria-labelledby="policy-density-title">
+              <div class="insight-title">
+                <div>
+                  <span class="kicker">30 ACTUAL SEEDS</span>
+                  <h3 id="policy-density-title">Seed AWT distribution</h3>
+                </div>
+                <span class="tag">KDE · avg wait</span>
+              </div>
+              <svg id="policy-density-chart" viewBox="0 0 760 280" role="img" aria-label="Average wait distribution by dispatch policy"></svg>
+              <div id="policy-density-legend" class="policy-density-legend"></div>
+              <p class="distribution-note">Gaussian-kernel density over the 30 observed per-seed average-wait values. This is an empirical run-to-run distribution, not an assumption that passenger waits are normally distributed.</p>
+            </section>
+
+            <section class="policy-ranking-card" aria-labelledby="policy-ranking-title">
+              <div class="insight-title">
+                <div>
+                  <span class="kicker">DECISION BOARD</span>
+                  <h3 id="policy-ranking-title">Dispatch policy ranking</h3>
+                </div>
+                <span class="tag">guardrail-aware</span>
+              </div>
+              <div class="policy-ranking-wrap">
+                <table class="policy-ranking-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Policy</th>
+                      <th>Evidence</th>
+                      <th>AWT · 95% CI</th>
+                      <th>P95</th>
+                      <th>P99</th>
+                      <th>Worst floor</th>
+                      <th>Energy</th>
+                      <th>Δ vs collective</th>
+                      <th>Speed rank</th>
+                    </tr>
+                  </thead>
+                  <tbody id="policy-ranking-body"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
         </section>
 
         <section class="panel replay-panel">
@@ -231,7 +276,7 @@
         <span>M0–M6 research release · 30-seed held-out evidence · public-demo candidate</span>
       </footer>
     </div>
-    <script type="module" src="/app.js?v=office-demand-v2"></script>
-    <script type="module" src="/queue-trend.js?v=office-demand-v2"></script>
+    <script type="module" src="/app.js?v=policy-insight-v1"></script>
+    <script type="module" src="/queue-trend.js?v=policy-insight-v1"></script>
   </body>
 </html>

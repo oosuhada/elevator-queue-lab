@@ -61,11 +61,16 @@ class ServerRunnerTests(unittest.TestCase):
         payload = self.runner.experiment()
         self.assertEqual("elevator-queue-lab.experiment-ui.v1", payload["schema"])
         baseline = payload["baseline"]
-        self.assertEqual("elevator-queue-lab.m3-regression-baseline.v1", baseline["schema"])
+        self.assertEqual("elevator-queue-lab.m3-regression-baseline.v2", baseline["schema"])
         self.assertIn("lunch", baseline["scenarios"])
+        lunch_capr = baseline["scenarios"]["lunch"]["policies"]["capr"]
+        self.assertEqual(30, len(lunch_capr["avg_wait_seed_values"]))
+        self.assertGreater(lunch_capr["avg_wait_ci95_halfwidth"], 0)
+        self.assertIn("p99_wait", lunch_capr)
+        self.assertIn("worst_floor_mean_wait", lunch_capr)
         self.assertEqual(
             "candidate_improvement",
-            baseline["scenarios"]["lunch"]["policies"]["capr"]["guardrail_classification"],
+            lunch_capr["guardrail_classification"],
         )
 
     def test_static_assets_disable_intermediary_caching(self) -> None:

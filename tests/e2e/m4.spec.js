@@ -60,7 +60,15 @@ test("live UI and deterministic replay match API state", async ({ page, request 
   await expect(page.locator("#decision-reason")).not.toHaveText("Waiting for the first dispatch decision…");
 
   expect(snapshot.metrics.reassignments).toBeGreaterThan(0);
-  await expect(page.locator("#event-stream .event-reassign")).toBeVisible();
+  const relevantEventKinds = new Set(["assign", "reassign", "assignment_invalidated", "full_pass"]);
+  const relevantEvents = snapshot.event_tail
+    .filter((event) => relevantEventKinds.has(event.kind))
+    .slice(-8);
+  expect(relevantEvents.length).toBeGreaterThan(0);
+  await expect(page.locator("#event-stream .event")).toHaveCount(relevantEvents.length);
+  if (relevantEvents.some((event) => event.kind === "reassign")) {
+    await expect(page.locator("#event-stream .event-reassign").first()).toBeVisible();
+  }
 
   for (const car of snapshot.elevators) {
     const locator = page.locator(`[data-car-id="${car.id}"]`);

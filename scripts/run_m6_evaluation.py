@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.learning import evaluate_learned_policy, load_model_artifact, model_verdict
+from app.demand import demand_contract
 
 
 SCENARIOS = ("morning", "lunch", "normal", "evening", "shock", "mixed_day")
@@ -65,6 +66,7 @@ def main() -> None:
     )
     payload = {
         "schema": "elevator-queue-lab.m6-heldout-release.v1",
+        "demand_contract": demand_contract(),
         "fixed_model": str(args.model.relative_to(ROOT)).replace("\\", "/"),
         "fixed_model_sha256": hashlib.sha256(args.model.read_bytes()).hexdigest(),
         "checkpoint_selection": metadata.get("checkpoint_selection"),

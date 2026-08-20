@@ -27,9 +27,11 @@
           <span>Traffic regime</span>
           <select id="scenario">
             <option value="morning">Morning up-peak</option>
-            <option value="lunch">Lunch mixed</option>
-            <option value="normal">Normal mixed</option>
+            <option value="lunch">Lunch lobby wave</option>
+            <option value="normal">Normal lobby-centric</option>
             <option value="evening">Evening down-peak</option>
+            <option value="shock">16F event release</option>
+            <option value="mixed_day">Compressed office day</option>
           </select>
         </label>
         <label>
@@ -65,6 +67,14 @@
           <button id="reset" class="button primary">Reset run</button>
         </div>
       </section>
+
+      <div class="demand-contract" aria-label="Synthetic demand assumptions">
+        <span>OFFICE TRIP MIX</span>
+        <strong>85% lobby-linked</strong>
+        <strong>10% roof-access</strong>
+        <strong>5% inter-floor</strong>
+        <small>Time of day changes direction, not the purpose mix · synthetic prior, not measured telemetry</small>
+      </div>
 
       <main class="workspace">
         <section class="panel building-panel">

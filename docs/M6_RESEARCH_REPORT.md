@@ -14,11 +14,11 @@ defensible result is a **regime-gated, guardrail-constrained use of predictive r
    energy-proxy regression;
 4. do not promote the current learned controller to a global replacement for the heuristic stack.
 
-The evidence is strongest for **lunch traffic**, where CAPR is a guardrail-clean improvement in
-both the original 30-seed M3 matrix and the independent 30-seed M6 held-out evaluation. Under
-`normal` and `mixed_day`, CAPR cuts waiting time sharply but moves substantially more, so the result
-remains an energy trade-off. Under `morning`, `evening` and `shock`, the extra predictive machinery
-does not establish a reliable unconditional advantage over the simpler comparator.
+The evidence is strongest for **lunch traffic**, where CAPR is the only guardrail-clean improvement
+in both the 30-seed M3 matrix and the independent 30-seed M6 held-out evaluation. Under `morning`,
+`normal`, `evening`, `shock` and `mixed_day`, CAPR either fails to improve mean wait or buys a wait
+reduction with enough extra movement to trip the energy guardrail. The richer controller therefore
+has useful intervention value, but not a case for unconditional use.
 
 The fixed M5 Dueling Double DQN checkpoint also fails its global gate. It is worse than collective
 on mean waiting time in five of six held-out regimes and improves only the completely unseen
@@ -36,7 +36,9 @@ The exact generated tables are in `docs/M6_EVIDENCE_SUMMARY.md`; machine-readabl
 ## Research system
 
 The project studies an 18-floor office with three low-zone cars (1F, 2F–9F) and three high-zone
-cars (1F, 10F–18F). Every passenger has an origin, destination and lifecycle timestamps. The
+cars (1F, 10F–18F). The synthetic workplace prior is **85% lobby-linked / 10% 18F roof-access /
+5% same-bank inter-floor**; time-of-day regimes mainly change the direction of the lobby-linked
+majority. Every passenger has an origin, destination and lifecycle timestamps. The
 simulator uses a 0.25 s physical step with acceleration/deceleration, explicit door phases,
 passenger transfer dwell and hard capacity constraints.
 
@@ -45,7 +47,7 @@ statistical analysis separate:
 
 ```mermaid
 flowchart LR
-    A[Seeded OD demand / canonical trace] --> B[0.25 s physical simulator]
+    A[Seeded 85/10/5 office OD demand / canonical trace] --> B[0.25 s physical simulator]
     B --> C[Hall calls + car state]
     C --> D1[Nearest / Collective]
     C --> D2[Queue-aware / CAPR]
@@ -75,6 +77,8 @@ assignment/reassignment, route ownership and event-ledger invariants.
 - five deterministic controllers;
 - 180 s measurement window with explicitly recorded zero-second warm-up;
 - 900 controller runs total;
+- explicit demand contract embedded in the evidence artifact: 85% lobby-linked, 10% roof-access,
+  5% same-bank inter-floor;
 - mean/P50/P95/P99 wait, journey time, throughput, unfinished queue, capacity misses,
   reassignment latency, floor fairness and a transparent movement/start/service energy proxy;
 - paired effect sizes and 95% confidence intervals;
@@ -105,30 +109,34 @@ python scripts/generate_m6_assets.py
 ```
 
 The fixed model SHA-256 recorded in the M6 artifact is
-`11dd1bf7c2adcb8404b7fbfd45062cb1b132bd0e9168cf8e8a10dc0faf965595`.
+`357709ca7a4b2f57cf8d4c67acabeca774fb507baf59fd4f77ac3ce370a138e6`.
 
 ## Finding 1 — lunch is the clearest CAPR regime
 
-In M3, collective mean waiting time is **24.15 s** and CAPR is **22.16 s** with a clean guardrail
-classification. In the separate 30-seed M6 held-out run, collective is **24.37 s** and CAPR is
-**21.62 s**. The paired held-out mean delta is about **-2.76 s**, with a 95% CI half-width of about
-**1.94 s**.
+In M3, collective mean waiting time is **24.84 s** and CAPR is **21.77 s** with a clean guardrail
+classification. In the separate 30-seed M6 held-out run, collective is **24.73 s** and CAPR is
+**22.45 s**. The paired held-out mean delta is about **-2.28 s**, with a 95% CI half-width of about
+**2.66 s**.
 
-This is the only traffic regime in which the project's current evidence repeatedly supports the
-full predictive controller without requiring an energy/fairness exception.
+This is the only traffic regime in which the project's current evidence repeatedly gives the full
+predictive controller a clean guardrail classification. The held-out CI is wider than the mean
+delta, so the result is a practical candidate rather than strong statistical proof of superiority.
 
-Interpretation: lunch creates enough inter-floor/mixed route competition that route-insertion ETA
-and predicted pickup capacity can correct stale assignments, while the additional movement remains
-within the current energy tolerance.
+Interpretation: even with inter-floor traffic capped at 5%, the bidirectional lunch lobby wave still
+creates enough competing routes for route-insertion ETA and predicted pickup capacity to correct
+stale assignments, while the additional movement remains within the current energy tolerance.
 
 ## Finding 2 — normal and mixed traffic expose a service/energy frontier
 
 The largest CAPR wait reductions do not automatically count as wins.
 
-- M3 normal: **16.18 s → 12.04 s**, but energy proxy **424 → 1122**.
-- M3 mixed day: **50.26 s → 14.66 s**, but energy proxy **858 → 1734**.
-- M6 held-out normal: **18.20 s → 11.67 s**, again with a large energy increase.
-- M6 held-out mixed day: **44.81 s → 14.28 s**, again with roughly twice the collective energy
+- M3 morning: **35.70 s → 24.45 s**, but energy proxy **801 → 1005** and simpler sticky/nearest
+  baselines are faster still.
+- M3 normal: **18.12 s → 11.48 s**, but energy proxy **524 → 1113**.
+- M3 mixed day: **39.32 s → 15.20 s**, but energy proxy **893 → 1711**.
+- M6 held-out normal: **19.15 s → 10.70 s**, again with a large energy increase.
+- M6 held-out mixed day: **44.36 s → 15.28 s**, again with a large energy increase.
+- M6 held-out morning: **34.07 s → 26.66 s**, but energy proxy **827 → 1040**.
   proxy.
 
 The pattern survives different seed sets. Predictive reassignment is therefore doing real useful
@@ -139,15 +147,17 @@ The supported engineering rule is not “disable CAPR because energy is higher.�
 predictive reassignment as an intervention subject to an explicit movement/energy budget**, and
 optimize the intervention threshold rather than maximizing reassignment responsiveness.
 
-## Finding 3 — strongly directional peaks do not justify unconditional complexity
+## Finding 3 — lobby-dominant peaks expose the value of simple low-churn control
 
 M3 morning gives the strongest counterexample to the idea that a more state-rich controller must
-win. Nearest-car averages **8.28 s**, collective **13.34 s**, and CAPR **16.05 s**. In the M6
-held-out set, CAPR is again slower than collective (**16.46 s vs 14.19 s**).
+win. With 85% lobby-linked trips and 97% of those moving upward, sticky averages **16.67 s**,
+nearest-car **19.37 s**, CAPR **24.45 s**, and collective **35.70 s**. CAPR improves the chosen
+collective reference, but the simpler policies serve this directional queue with much less churn.
 
-Evening and shock likewise fail to establish a reliable CAPR mean-wait advantage. In the 30-seed
-M6 held-out evaluation, evening is effectively tied on mean wait (**19.99 s vs 20.05 s**) while
-CAPR uses materially more energy; shock is slower (**22.49 s vs 21.62 s**).
+Evening and shock likewise fail to establish an unconditional CAPR advantage. In the 30-seed M6
+held-out evaluation, evening improves only **21.32 s → 20.61 s** while energy rises **1669 → 1967**;
+shock improves **23.25 s → 22.09 s** while energy rises **1665 → 1918**. Both are classified as
+tradeoffs, not wins.
 
 This supports a default bias toward simpler dispatch in strongly directional or easily served
 traffic. Predictive intervention should be triggered by a measurable problem—capacity risk,
@@ -159,21 +169,21 @@ The 30-seed held-out M6 means are:
 
 | scenario | collective | CAPR | RL | RL classification |
 |---|---:|---:|---:|---|
-| morning | 14.19 s | 16.46 s | 23.71 s | no mean improvement |
-| lunch | 24.37 s | 21.62 s | 30.97 s | no mean improvement |
-| normal | 18.20 s | 11.67 s | 23.64 s | no mean improvement |
-| evening | 20.05 s | 19.99 s | 32.04 s | no mean improvement |
-| shock | 21.62 s | 22.49 s | 33.09 s | no mean improvement |
-| mixed_day | 44.81 s | 14.28 s | 35.07 s | candidate improvement |
+| morning | 34.07 s | 26.66 s | 42.52 s | no mean improvement |
+| lunch | 24.73 s | 22.45 s | 34.61 s | no mean improvement |
+| normal | 19.15 s | 10.70 s | 22.93 s | no mean improvement |
+| evening | 21.32 s | 20.61 s | 34.80 s | no mean improvement |
+| shock | 23.25 s | 22.09 s | 35.15 s | no mean improvement |
+| mixed_day | 44.36 s | 15.28 s | 37.09 s | candidate improvement |
 
-On `mixed_day`, RL improves collective by about **9.74 s** on average; the paired 95% CI
-half-width is about **9.19 s**. The energy proxy remains close enough to collective to pass the
-configured guardrail. This is the one credible direction for follow-up.
+On `mixed_day`, RL improves collective by about **7.28 s** on average; the paired 95% CI half-width
+is about **5.83 s**. The energy proxy remains below collective in this run, so it passes the
+configured guardrail. This is the one credible direction for follow-up, not a general RL win.
 
-However, the five single-feature M5 ablations do not yield a clean causal story. Removing age or
-capacity features actually improved the small model's mixed-day mean in that experiment, while
-removing pre-positioning context made it worse. The network has therefore not learned a simple
-monotonic analogue of the CAPR terms.
+However, the five single-feature M5 ablations do not yield a clean causal story. Under the retrained
+lobby-centric checkpoint, zeroing ETA, load, capacity, age or pre-positioning each leaves the
+mixed-day headline unchanged to four decimals. The network therefore has not demonstrated useful
+dependence on those individual CAPR-like feature groups.
 
 The most defensible role for learning is a **bounded residual policy**: keep feasibility masking,
 retain a deterministic service baseline and allow learning to propose limited corrections only
@@ -183,13 +193,13 @@ inside explicit tail/fairness/energy constraints.
 
 This is a synthesis of the evidence, not a claim of a novel named algorithm:
 
-1. **Default to a low-churn deterministic controller.** Collective is the reference; nearest-car
-   is particularly strong in the current morning model.
+1. **Default to a low-churn deterministic controller.** Collective remains the experiment reference,
+   but sticky/nearest are substantially stronger in the current lobby-dominant morning regime.
 2. **Escalate to predictive reassignment when the assigned car is capacity-infeasible or when a
    replacement has a material route-insertion ETA advantage.** Keep cooldown/hysteresis.
-3. **Make the intervention regime-aware.** Lunch supports broad CAPR use. Normal/mixed traffic
-   supports CAPR only when an energy/movement budget permits the extra service effort. Morning,
-   evening and shock do not currently justify unconditional CAPR.
+3. **Make the intervention regime-aware.** Lunch supports broad CAPR use. Morning/normal/mixed and
+   even the smaller evening/shock gains support CAPR only when an energy/movement budget permits the
+   extra service effort.
 4. **Treat floor fairness, P95/P99 and energy as vetoes, not presentation metrics.** A lower mean
    wait alone is insufficient.
 5. **Keep learned control subordinate to masks and guardrails until it generalizes across regimes.**
@@ -227,6 +237,9 @@ claim.
 ## Limitations
 
 - Traffic is synthetic and scenario-driven rather than measured from an occupied building.
+- The 85/10/5 workplace mix is an explicit prior chosen to suppress unrealistic arbitrary
+  floor-to-floor traffic. 18F is a roof-access proxy, and low-bank-to-roof multi-leg transfers are
+  not yet represented.
 - The physical model omits jerk-limited motion, manufacturer-specific leveling, obstruction and
   a calibrated electrical/regenerative energy model.
 - The energy metric is a comparative proxy based on distance, starts and service events; it is not

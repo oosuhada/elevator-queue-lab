@@ -111,3 +111,11 @@ demo without private infrastructure.
 - [x] embed the demand contract in M3/M5/M6 evidence and regression checks;
 - [x] regenerate the 900-run M3 baseline, retrain M5, and rerun the M6 30-seed held-out release;
 - [x] deploy and visually re-verify the hardened demand model at `https://elevator.oosu.dev/`.
+
+## Post-release dashboard decision support
+
+- [x] preserve all 30 per-seed M3 average-wait observations per policy in the checked regression baseline;
+- [x] visualize the empirical seed-to-seed AWT distribution with a Gaussian-kernel density chart;
+- [x] rank dispatch policies per scenario using the existing guardrail classification before raw speed;
+- [x] expose AWT 95% CI, P95/P99, worst-floor wait, energy and paired delta versus collective in one decision table;
+- [x] regression-test leaderboard behavior, density rendering and mobile layout with Playwright.

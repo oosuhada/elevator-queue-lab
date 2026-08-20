@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
-import math
 import sys
 from pathlib import Path
-from statistics import mean, stdev
+from statistics import mean
+from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.analytics import (
+    analyze_simulation,
+    guardrail_classification,
+    paired_comparison,
+    summarize_metric,
+)
 from app.domain import SimulationConfig
+from app.scenarios import SCENARIOS, SCENARIO_METADATA, generate_scenario_trace
 from app.simulator import ElevatorSimulation
-from app.trace import generate_trace
 
 
 POLICIES = (
@@ -23,12 +30,153 @@ POLICIES = (
     "queue_aware",
     "capr",
 )
+REFERENCE_POLICY = "collective"
+SUMMARY_METRICS = (
+    "avg_wait",
+    "p50_wait",
+    "p95_wait",
+    "p99_wait",
+    "max_wait",
+    "avg_journey",
+    "p95_journey",
+    "p99_journey",
+    "throughput_per_min",
+    "unfinished",
+    "capacity_misses",
+    "reassignments",
+    "invalidations",
+    "abandoned",
+    "distance_m",
+    "energy_proxy",
+    "worst_floor_mean_wait",
+    "floor_wait_gap",
+    "floor_wait_std",
+)
+LOWER_IS_BETTER = {
+    "avg_wait",
+    "p50_wait",
+    "p95_wait",
+    "p99_wait",
+    "max_wait",
+    "avg_journey",
+    "p95_journey",
+    "p99_journey",
+    "unfinished",
+    "capacity_misses",
+    "abandoned",
+    "distance_m",
+    "energy_proxy",
+    "worst_floor_mean_wait",
+    "floor_wait_gap",
+    "floor_wait_std",
+}
 
 
-def confidence95(values: list[float]) -> float:
-    if len(values) < 2:
-        return 0.0
-    return 1.96 * stdev(values) / math.sqrt(len(values))
+def run_scenario(
+    scenario: str,
+    seconds: int,
+    seeds: int,
+    *,
+    control_mode: str = "conventional",
+) -> dict[str, object]:
+    if seeds <= 0:
+        raise ValueError("seeds must be positive")
+    config = SimulationConfig(control_mode=control_mode)
+    traces = {
+        seed: generate_scenario_trace(scenario, seconds, seed)
+        for seed in range(1, seeds + 1)
+    }
+    raw_runs: list[dict[str, object]] = []
+    for seed, trace in traces.items():
+        for policy in POLICIES:
+            simulation = ElevatorSimulation(
+                scenario=scenario,
+                policy_name=policy,
+                seed=seed,
+                trace=trace,
+                config=config,
+            )
+            simulation.run(seconds)
+            audit = simulation.audit()
+            if not audit["ok"]:
+                raise RuntimeError(
+                    f"audit failed scenario={scenario} policy={policy} seed={seed}: {audit}"
+                )
+            analysis = analyze_simulation(simulation)
+            raw_runs.append(
+                {
+                    "scenario": scenario,
+                    "policy": policy,
+                    "seed": seed,
+                    "trace_digest": trace.digest,
+                    **analysis,
+                }
+            )
+
+    by_policy = {
+        policy: [row for row in raw_runs if row["policy"] == policy]
+        for policy in POLICIES
+    }
+    reference_rows = by_policy[REFERENCE_POLICY]
+    summaries: list[dict[str, object]] = []
+    reference_means = {
+        metric: mean(float(row[metric]) for row in reference_rows)
+        for metric in SUMMARY_METRICS
+    }
+
+    for policy in POLICIES:
+        rows = by_policy[policy]
+        metric_summary = {
+            metric: {
+                key: round(value, 6)
+                for key, value in summarize_metric(rows, metric).items()
+            }
+            for metric in SUMMARY_METRICS
+        }
+        comparisons = {
+            metric: {
+                key: round(value, 6)
+                for key, value in paired_comparison(rows, reference_rows, metric).items()
+            }
+            for metric in (
+                "avg_wait",
+                "p95_wait",
+                "p99_wait",
+                "worst_floor_mean_wait",
+                "energy_proxy",
+            )
+        }
+        candidate_means = {
+            metric: float(metric_summary[metric]["mean"])
+            for metric in SUMMARY_METRICS
+        }
+        guardrail = (
+            "reference"
+            if policy == REFERENCE_POLICY
+            else guardrail_classification(candidate_means, reference_means)
+        )
+        summaries.append(
+            {
+                "policy": policy,
+                "runs": len(rows),
+                "metrics": metric_summary,
+                "paired_vs_collective": comparisons,
+                "guardrail_classification": guardrail,
+            }
+        )
+
+    return {
+        "scenario": scenario,
+        "description": SCENARIO_METADATA[scenario].description,
+        "segments": list(SCENARIO_METADATA[scenario].segments),
+        "seconds": seconds,
+        "seeds": seeds,
+        "trace_digests": {
+            str(seed): trace.digest for seed, trace in traces.items()
+        },
+        "policies": summaries,
+        "raw_runs": raw_runs,
+    }
 
 
 def run_experiment(
@@ -38,89 +186,148 @@ def run_experiment(
     *,
     control_mode: str = "conventional",
 ) -> dict[str, object]:
-    rows: list[dict[str, object]] = []
     config = SimulationConfig(control_mode=control_mode)
-    traces = {
-        seed: generate_trace(scenario, seconds, seed)
-        for seed in range(1, seeds + 1)
-    }
-    for policy in POLICIES:
-        runs: list[dict[str, float | int]] = []
-        for seed in range(1, seeds + 1):
-            simulation = ElevatorSimulation(
-                scenario=scenario,
-                policy_name=policy,
-                seed=seed,
-                trace=traces[seed],
-                config=config,
-            )
-            metrics = simulation.run(seconds)
-            audit = simulation.audit()
-            if not audit["ok"]:
-                raise RuntimeError(
-                    f"audit failed policy={policy} seed={seed}: {audit}"
-                )
-            runs.append(metrics)
-        waits = [float(run["avg_wait"]) for run in runs]
-        p95s = [float(run["p95_wait"]) for run in runs]
-        rows.append(
-            {
-                "policy": policy,
-                "runs": len(runs),
-                "avg_wait_mean": round(mean(waits), 3),
-                "avg_wait_ci95_halfwidth": round(
-                    confidence95(waits),
-                    3,
-                ),
-                "p95_wait_mean": round(mean(p95s), 3),
-                "capacity_misses_mean": round(
-                    mean(
-                        float(run["missed_capacity"])
-                        for run in runs
-                    ),
-                    3,
-                ),
-                "reassignments_mean": round(
-                    mean(
-                        float(run.get("reassignments", 0))
-                        for run in runs
-                    ),
-                    3,
-                ),
-                "invalidations_mean": round(
-                    mean(
-                        float(run.get("invalidations", 0))
-                        for run in runs
-                    ),
-                    3,
-                ),
-            }
-        )
     return {
-        "schema": "elevator-queue-lab.experiment.v1",
-        "scenario": scenario,
-        "seconds": seconds,
-        "seeds": seeds,
-        "common_seed_range": [1, seeds],
+        "schema": "elevator-queue-lab.experiment.v2",
+        "reference_policy": REFERENCE_POLICY,
+        "common_random_numbers": True,
         "control_mode": control_mode,
         "simulation_config": config.as_dict(),
-        "trace_digests": {
-            str(seed): trace.digest
-            for seed, trace in traces.items()
+        "scenario_matrix": [
+            run_scenario(
+                scenario,
+                seconds,
+                seeds,
+                control_mode=control_mode,
+            )
+        ],
+        "interpretation": {
+            "effect_size": "paired Cohen's dz on per-seed candidate minus collective outcomes",
+            "ci": "normal-approximation 95% confidence interval half-width across seeded runs",
+            "energy_proxy": "unitless comparative proxy; not measured kWh",
+            "guardrail_rule": (
+                "mean-wait improvement is not an unconditional win if P95 wait >5%, "
+                "worst-floor mean wait >5s, or energy proxy >10% worse than collective"
+            ),
         },
-        "results": rows,
+    }
+
+
+def run_matrix(
+    seconds: int,
+    seeds: int,
+    *,
+    control_mode: str = "conventional",
+    scenarios: Iterable[str] = SCENARIOS,
+) -> dict[str, object]:
+    config = SimulationConfig(control_mode=control_mode)
+    selected = tuple(scenarios)
+    return {
+        "schema": "elevator-queue-lab.experiment.v2",
+        "reference_policy": REFERENCE_POLICY,
+        "common_random_numbers": True,
+        "control_mode": control_mode,
+        "simulation_config": config.as_dict(),
+        "scenario_matrix": [
+            run_scenario(
+                scenario,
+                seconds,
+                seeds,
+                control_mode=control_mode,
+            )
+            for scenario in selected
+        ],
+        "interpretation": {
+            "effect_size": "paired Cohen's dz on per-seed candidate minus collective outcomes",
+            "ci": "normal-approximation 95% confidence interval half-width across seeded runs",
+            "energy_proxy": "unitless comparative proxy; not measured kWh",
+            "guardrail_rule": (
+                "mean-wait improvement is not an unconditional win if P95 wait >5%, "
+                "worst-floor mean wait >5s, or energy proxy >10% worse than collective"
+            ),
+        },
+    }
+
+
+def _write_csv_artifacts(payload: dict[str, object], output: Path) -> tuple[Path, Path]:
+    runs_path = output.with_name(f"{output.stem}.runs.csv")
+    summary_path = output.with_name(f"{output.stem}.summary.csv")
+    raw_rows: list[dict[str, object]] = []
+    summary_rows: list[dict[str, object]] = []
+    for scenario in payload["scenario_matrix"]:
+        raw_rows.extend(scenario["raw_runs"])
+        for policy in scenario["policies"]:
+            row: dict[str, object] = {
+                "scenario": scenario["scenario"],
+                "policy": policy["policy"],
+                "runs": policy["runs"],
+                "guardrail_classification": policy["guardrail_classification"],
+            }
+            for metric, values in policy["metrics"].items():
+                row[f"{metric}_mean"] = values["mean"]
+                row[f"{metric}_ci95_halfwidth"] = values["ci95_halfwidth"]
+            for metric, values in policy["paired_vs_collective"].items():
+                row[f"{metric}_delta_vs_collective"] = values["delta_mean"]
+                row[f"{metric}_dz_vs_collective"] = values["paired_cohens_dz"]
+            summary_rows.append(row)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _write_csv(runs_path, raw_rows)
+    _write_csv(summary_path, summary_rows)
+    return runs_path, summary_path
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    fieldnames = list(rows[0].keys())
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for source in rows:
+            row = dict(source)
+            if isinstance(row.get("floor_mean_waits"), dict):
+                row["floor_mean_waits"] = json.dumps(
+                    row["floor_mean_waits"],
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            writer.writerow(row)
+
+
+def _compact_console_summary(payload: dict[str, object]) -> dict[str, object]:
+    scenarios: list[dict[str, object]] = []
+    for scenario in payload["scenario_matrix"]:
+        policies = []
+        for policy in scenario["policies"]:
+            policies.append(
+                {
+                    "policy": policy["policy"],
+                    "avg_wait": policy["metrics"]["avg_wait"]["mean"],
+                    "p95_wait": policy["metrics"]["p95_wait"]["mean"],
+                    "energy_proxy": policy["metrics"]["energy_proxy"]["mean"],
+                    "guardrail": policy["guardrail_classification"],
+                }
+            )
+        scenarios.append({"scenario": scenario["scenario"], "policies": policies})
+    return {
+        "schema": payload["schema"],
+        "reference_policy": payload["reference_policy"],
+        "scenarios": scenarios,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--scenario", default="morning", choices=SCENARIOS)
     parser.add_argument(
-        "--scenario",
-        default="morning",
-        choices=("morning", "lunch", "normal", "evening"),
+        "--matrix",
+        action="store_true",
+        help="run morning/lunch/normal/evening/shock/mixed_day",
     )
     parser.add_argument("--seconds", type=int, default=900)
-    parser.add_argument("--seeds", type=int, default=5)
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument(
         "--control-mode",
         choices=("conventional", "destination"),
@@ -128,17 +335,38 @@ def main() -> None:
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    payload = run_experiment(
-        args.scenario,
-        args.seconds,
-        args.seeds,
-        control_mode=args.control_mode,
+    payload = (
+        run_matrix(args.seconds, args.seeds, control_mode=args.control_mode)
+        if args.matrix
+        else run_experiment(
+            args.scenario,
+            args.seconds,
+            args.seeds,
+            control_mode=args.control_mode,
+        )
     )
-    rendered = json.dumps(payload, indent=2, ensure_ascii=False)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered + "\n", encoding="utf-8")
-    print(rendered)
+        args.output.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
+        runs_path, summary_path = _write_csv_artifacts(payload, args.output)
+        print(
+            json.dumps(
+                {
+                    "json": str(args.output),
+                    "runs_csv": str(runs_path),
+                    "summary_csv": str(summary_path),
+                    **_compact_console_summary(payload),
+                },
+                indent=2,
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+        )
+    else:
+        print(json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False))
 
 
 if __name__ == "__main__":

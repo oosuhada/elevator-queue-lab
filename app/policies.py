@@ -331,7 +331,12 @@ class CAPRPolicy:
         return 5 if elevator.bank == "low" else 14
 
 
-def build_policy(name: str, weights: QueueWeights | None = None) -> DispatchPolicy:
+def build_policy(
+    name: str,
+    weights: QueueWeights | None = None,
+    *,
+    scenario: str = "normal",
+) -> DispatchPolicy:
     if name == "legacy_sticky":
         return LegacyStickyPolicy()
     if name == "nearest_car":
@@ -342,4 +347,16 @@ def build_policy(name: str, weights: QueueWeights | None = None) -> DispatchPoli
         return QueueAwarePolicy(weights=weights or QueueWeights(), name=name)
     if name == "capr":
         return CAPRPolicy()
+    if name == "rl":
+        from pathlib import Path
+
+        from .learning import LearnedDispatchPolicy, load_model_artifact
+
+        model_path = Path(__file__).resolve().parents[1] / "models" / "m5-ddqn-baseline.json"
+        if not model_path.is_file():
+            raise FileNotFoundError(
+                "M5 learned policy artifact is unavailable; run scripts/run_m5_training.py first"
+            )
+        network, _ = load_model_artifact(model_path)
+        return LearnedDispatchPolicy(network, scenario=scenario)
     raise ValueError(f"Unknown policy: {name}")

@@ -5,10 +5,10 @@ function waitText(value) {
   return Number(value || 0).toFixed(1) + "s";
 }
 
-test("live UI and deterministic replay match API state", async ({ page, request }) => {
+test("live UI and deterministic replay match API state", async ({ page, request, baseURL }) => {
   fs.mkdirSync("artifacts", { recursive: true });
   await page.setViewportSize({ width: 1440, height: 1100 });
-  await page.goto("/");
+  await page.goto(baseURL);
   await expect(page.locator("#comparison-cards .comparison-card")).toHaveCount(5);
 
   await request.post("/api/control", {

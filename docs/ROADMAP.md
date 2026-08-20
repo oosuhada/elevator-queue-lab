@@ -89,12 +89,16 @@ evening/shock all fail the collective mean-wait comparison. See `docs/M5_MODEL_C
 
 ## M6 — theory extraction and portfolio release
 
-- [ ] analyze which CAPR/RL terms cause gains by traffic regime;
-- [ ] formulate the strongest supported dispatch rule/theory with limitations;
-- [ ] generate final plots and experiment tables;
-- [ ] write research report and architecture diagram;
-- [ ] deploy public demo;
-- [ ] README visual QA, demo QA and clean repository audit.
+- [x] analyze which CAPR/RL terms correlate with gains by traffic regime without overstating causality;
+- [x] formulate the strongest supported dispatch rule/theory with limitations;
+- [x] generate final plots and experiment tables from committed evidence;
+- [x] write research report and architecture diagram;
+- [x] run a fixed-checkpoint 30-seed held-out release evaluation disjoint from M5 training;
+- [x] refresh the README screenshot from the current real simulator UI and pass local browser QA;
+- [x] add and pass an executable clean-repository release audit;
+- [x] prepare an isolated `elevator.oosu.dev` Mac mini service/proxy deployment path;
+- [x] deploy the dedicated public demo at `https://elevator.oosu.dev/`;
+- [x] run public health/Chromium QA and verify the README live-demo link.
 
 **Gate:** a reviewer can clone, reproduce one benchmark, understand the hypothesis and open a live
 demo without private infrastructure.

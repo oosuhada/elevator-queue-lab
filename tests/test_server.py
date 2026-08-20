@@ -65,6 +65,5 @@ class ServerRunnerTests(unittest.TestCase):
             baseline["scenarios"]["lunch"]["policies"]["capr"]["guardrail_classification"],
         )
 
-
 if __name__ == "__main__":
     unittest.main()

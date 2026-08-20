@@ -37,6 +37,18 @@ def _resolve_choice(
     )
 
 
+def _hold_current(
+    call: HallCall,
+    decision: DispatchDecision,
+    reason: str,
+) -> DispatchDecision:
+    return DispatchDecision(
+        chosen_elevator_id=call.assigned_elevator,
+        evaluations=decision.evaluations,
+        reason=f"hold {call.assigned_elevator}: {reason}",
+    )
+
+
 def _legacy_eta_seconds(elevator: Elevator, floor: int) -> float:
     direct = abs(elevator.floor - floor) * 2.0
     queued = len(elevator.stops) * 4.0
@@ -249,13 +261,7 @@ class QueueAwarePolicy:
 
 @dataclass(slots=True)
 class CAPRPolicy:
-    """Capacity-Aware Predictive Reassignment controller.
-
-    CAPR continuously re-evaluates the assigned car. Cars predicted to have no usable
-    residual capacity at the pickup are made infeasible before they physically pass the call.
-    A minimum score gain and assignment cooldown are enforced by the simulator to avoid
-    reassignment thrashing.
-    """
+    """Capacity-Aware Predictive Reassignment controller."""
 
     name: str = "capr"
     immediate_reassignment: bool = True
@@ -270,7 +276,7 @@ class CAPRPolicy:
         queue_size: int,
         now: float,
     ) -> DispatchDecision:
-        return choose_decision(
+        base = choose_decision(
             call,
             elevators,
             config,
@@ -278,9 +284,43 @@ class CAPRPolicy:
             now=now,
             mode="capr",
         )
+        assigned_id = call.assigned_elevator
+        chosen_id = base.chosen_elevator_id
+        if assigned_id is None or chosen_id is None or assigned_id == chosen_id:
+            return base
+
+        assigned = base.evaluation_for(assigned_id)
+        chosen = base.evaluation_for(chosen_id)
+        if assigned is None:
+            return base
+        if chosen is None:
+            return _hold_current(call, base, "replacement evaluation missing")
+
+        # Capacity invalidation is the primary CAPR intervention. Reassign immediately only
+        # when the replacement is actually feasible. If every car is predicted full, holding
+        # the current owner is less harmful than ping-ponging between equally infeasible cars.
+        if not assigned.feasible:
+            if chosen.feasible:
+                return base
+            return _hold_current(call, base, "all compatible cars lack predicted pickup capacity")
+
+        # For a feasible current car, require a meaningful ETA improvement in addition to
+        # the simulator's score/cooldown gate. This makes reassignment an exception rather
+        # than a continuously oscillating optimization of tiny score differences.
+        assignment_age = now - call.assigned_at if call.assigned_at is not None else 0.0
+        score_gain = assigned.score - chosen.score
+        eta_gain = assigned.pickup_eta - chosen.pickup_eta
+        if assignment_age < config.reassignment_cooldown_seconds:
+            return _hold_current(call, base, f"cooldown {assignment_age:.1f}s")
+        if score_gain < config.reassignment_min_gain:
+            return _hold_current(call, base, f"score gain {score_gain:.1f} below threshold")
+        if eta_gain < config.reassignment_min_eta_gain_seconds:
+            return _hold_current(call, base, f"ETA gain {eta_gain:.1f}s below threshold")
+        if call.reassignment_count >= config.max_noncapacity_reassignments_per_call:
+            return _hold_current(call, base, "non-capacity reassignment budget exhausted")
+        return base
 
     def parking_floor(self, elevator: Elevator, scenario: str) -> int | None:
-        # Demand-aware pre-positioning is deliberately simple and explainable at M2.
         if scenario == "morning":
             return 1
         if scenario == "lunch":

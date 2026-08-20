@@ -5,6 +5,7 @@ const shafts = document.querySelector("#shafts");
 const controls = {
   scenario: document.querySelector("#scenario"),
   policy: document.querySelector("#policy"),
+  controlMode: document.querySelector("#control-mode"),
   speed: document.querySelector("#speed"),
   pause: document.querySelector("#pause"),
   reset: document.querySelector("#reset"),
@@ -51,6 +52,7 @@ function fmtSeconds(value) {
 function render(snapshot) {
   controls.scenario.value = snapshot.scenario;
   controls.policy.value = snapshot.policy;
+  controls.controlMode.value = snapshot.simulation_config?.control_mode || "conventional";
   document.querySelector("#clock").textContent = snapshot.clock;
   const minutes = Math.floor(snapshot.sim_time / 60);
   const seconds = snapshot.sim_time % 60;
@@ -171,14 +173,18 @@ async function sendControl(action) {
       action,
       scenario: controls.scenario.value,
       policy: controls.policy.value,
+      control_mode: controls.controlMode.value,
       speed: Number(controls.speed.value),
     }),
   });
-  render(await response.json());
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "control request failed");
+  render(payload);
 }
 
 controls.scenario.addEventListener("change", () => sendControl("reset"));
 controls.policy.addEventListener("change", () => sendControl("reset"));
+controls.controlMode.addEventListener("change", () => sendControl("reset"));
 controls.speed.addEventListener("change", () => sendControl("update"));
 controls.reset.addEventListener("click", () => sendControl("reset"));
 controls.pause.addEventListener("click", async () => {

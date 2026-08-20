@@ -27,7 +27,10 @@ def _eta_seconds(elevator: Elevator, floor: int) -> float:
     queued = len(elevator.stops) * 4.0
     if elevator.stops:
         queued += abs(elevator.stops[0] - elevator.floor) * 1.2
-    return direct + queued + elevator.door_timer
+    phase_delay = elevator.phase_timer if elevator.phase != "idle" else 0.0
+    if elevator.phase == "moving":
+        phase_delay += max(0.0, elevator.travel_duration - elevator.travel_elapsed)
+    return direct + queued + phase_delay
 
 
 @dataclass(slots=True)

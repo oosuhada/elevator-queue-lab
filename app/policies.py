@@ -318,6 +318,7 @@ class CAPRPolicy:
             return _hold_current(call, base, f"ETA gain {eta_gain:.1f}s below threshold")
         if call.reassignment_count >= config.max_noncapacity_reassignments_per_call:
             return _hold_current(call, base, "non-capacity reassignment budget exhausted")
+        call.reassignment_count += 1
         return base
 
     def parking_floor(self, elevator: Elevator, scenario: str) -> int | None:

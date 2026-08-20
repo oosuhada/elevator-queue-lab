@@ -16,7 +16,13 @@ from app.simulator import ElevatorSimulation
 from app.trace import generate_trace
 
 
-POLICIES = ("legacy_sticky", "collective", "queue_aware")
+POLICIES = (
+    "legacy_sticky",
+    "nearest_car",
+    "collective",
+    "queue_aware",
+    "capr",
+)
 
 
 def confidence95(values: list[float]) -> float:
@@ -25,10 +31,19 @@ def confidence95(values: list[float]) -> float:
     return 1.96 * stdev(values) / math.sqrt(len(values))
 
 
-def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]:
+def run_experiment(
+    scenario: str,
+    seconds: int,
+    seeds: int,
+    *,
+    control_mode: str = "conventional",
+) -> dict[str, object]:
     rows: list[dict[str, object]] = []
-    config = SimulationConfig()
-    traces = {seed: generate_trace(scenario, seconds, seed) for seed in range(1, seeds + 1)}
+    config = SimulationConfig(control_mode=control_mode)
+    traces = {
+        seed: generate_trace(scenario, seconds, seed)
+        for seed in range(1, seeds + 1)
+    }
     for policy in POLICIES:
         runs: list[dict[str, float | int]] = []
         for seed in range(1, seeds + 1):
@@ -39,7 +54,13 @@ def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]
                 trace=traces[seed],
                 config=config,
             )
-            runs.append(simulation.run(seconds))
+            metrics = simulation.run(seconds)
+            audit = simulation.audit()
+            if not audit["ok"]:
+                raise RuntimeError(
+                    f"audit failed policy={policy} seed={seed}: {audit}"
+                )
+            runs.append(metrics)
         waits = [float(run["avg_wait"]) for run in runs]
         p95s = [float(run["p95_wait"]) for run in runs]
         rows.append(
@@ -47,9 +68,32 @@ def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]
                 "policy": policy,
                 "runs": len(runs),
                 "avg_wait_mean": round(mean(waits), 3),
-                "avg_wait_ci95_halfwidth": round(confidence95(waits), 3),
+                "avg_wait_ci95_halfwidth": round(
+                    confidence95(waits),
+                    3,
+                ),
                 "p95_wait_mean": round(mean(p95s), 3),
-                "capacity_misses_mean": round(mean(float(run["missed_capacity"]) for run in runs), 3),
+                "capacity_misses_mean": round(
+                    mean(
+                        float(run["missed_capacity"])
+                        for run in runs
+                    ),
+                    3,
+                ),
+                "reassignments_mean": round(
+                    mean(
+                        float(run.get("reassignments", 0))
+                        for run in runs
+                    ),
+                    3,
+                ),
+                "invalidations_mean": round(
+                    mean(
+                        float(run.get("invalidations", 0))
+                        for run in runs
+                    ),
+                    3,
+                ),
             }
         )
     return {
@@ -58,20 +102,38 @@ def run_experiment(scenario: str, seconds: int, seeds: int) -> dict[str, object]
         "seconds": seconds,
         "seeds": seeds,
         "common_seed_range": [1, seeds],
+        "control_mode": control_mode,
         "simulation_config": config.as_dict(),
-        "trace_digests": {str(seed): trace.digest for seed, trace in traces.items()},
+        "trace_digests": {
+            str(seed): trace.digest
+            for seed, trace in traces.items()
+        },
         "results": rows,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scenario", default="morning", choices=("morning", "lunch", "normal", "evening"))
+    parser.add_argument(
+        "--scenario",
+        default="morning",
+        choices=("morning", "lunch", "normal", "evening"),
+    )
     parser.add_argument("--seconds", type=int, default=900)
     parser.add_argument("--seeds", type=int, default=5)
+    parser.add_argument(
+        "--control-mode",
+        choices=("conventional", "destination"),
+        default="conventional",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    payload = run_experiment(args.scenario, args.seconds, args.seeds)
+    payload = run_experiment(
+        args.scenario,
+        args.seconds,
+        args.seeds,
+        control_mode=args.control_mode,
+    )
     rendered = json.dumps(payload, indent=2, ensure_ascii=False)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -81,4 +143,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

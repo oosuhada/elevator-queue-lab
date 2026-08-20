@@ -36,8 +36,17 @@
           <span>Dispatch policy</span>
           <select id="policy">
             <option value="legacy_sticky">Legacy sticky</option>
+            <option value="nearest_car">Nearest car</option>
             <option value="collective">Collective control</option>
-            <option value="queue_aware" selected>Queue-aware</option>
+            <option value="queue_aware">Queue-aware</option>
+            <option value="capr" selected>CAPR predictive</option>
+          </select>
+        </label>
+        <label>
+          <span>Call input</span>
+          <select id="control-mode">
+            <option value="conventional" selected>Conventional hall call</option>
+            <option value="destination">Destination control</option>
           </select>
         </label>
         <label>
@@ -101,7 +110,7 @@
             <article class="metric">
               <span>Full-car misses</span>
               <strong id="misses">0</strong>
-              <small>Pickup demand left behind</small>
+              <small id="reassignments">0 predictive reassignments</small>
             </article>
           </section>
 
@@ -136,16 +145,16 @@
           <section class="panel research-panel">
             <div class="panel-title compact">
               <div>
-                <span class="kicker">CURRENT HYPOTHESIS</span>
+                <span class="kicker">EXECUTABLE HYPOTHESIS</span>
                 <h3>Capacity-Aware Predictive Reassignment</h3>
               </div>
               <span class="tag accent">CAPR</span>
             </div>
             <p>Invalidate stale assignments before a failed pickup when the assigned car’s predicted residual capacity or route ETA becomes poor.</p>
             <div class="research-steps">
-              <span>ETA</span><b>+</b><span>load</span><b>+</b><span>route</span><b>+</b><span>call age</span><b>+</b><span>demand forecast</span>
+              <span>route ETA</span><b>+</b><span>capacity</span><b>+</b><span>hysteresis</span><b>+</b><span>call age</span><b>+</b><span>parking</span>
             </div>
-            <small class="muted">Queue-aware is the current executable precursor. CAPR and the learned controller are roadmap milestones.</small>
+            <small id="decision-reason" class="muted">Waiting for the first dispatch decision…</small>
           </section>
         </aside>
       </main>
@@ -158,4 +167,3 @@
     <script type="module" src="/app.js"></script>
   </body>
 </html>
-

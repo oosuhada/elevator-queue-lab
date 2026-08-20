@@ -23,14 +23,19 @@ class HallCall:
     direction: int
     bank: str
     created_at: float
+    destination: int | None = None
     assigned_elevator: str | None = None
+    assigned_at: float | None = None
+    assigned_score: float | None = None
     missed_count: int = 0
     blocked_until: float = 0.0
     last_assigned_elevator: str | None = None
+    last_evaluated_at: float = 0.0
+    reassignment_count: int = 0
 
     @property
-    def key(self) -> tuple[int, int, str]:
-        return (self.floor, self.direction, self.bank)
+    def key(self) -> tuple[int, int, str, int | None]:
+        return (self.floor, self.direction, self.bank, self.destination)
 
 
 @dataclass(slots=True)
@@ -90,8 +95,33 @@ class SimulationConfig:
     passenger_transfer_seconds: float = 0.45
     time_step_seconds: float = 0.25
     passenger_patience_seconds: float | None = None
+    control_mode: str = "conventional"
+    reassignment_interval_seconds: float = 1.0
+    reassignment_cooldown_seconds: float = 6.0
+    reassignment_min_gain: float = 8.0
+    reassignment_min_eta_gain_seconds: float = 5.0
+    max_noncapacity_reassignments_per_call: int = 1
+    capacity_reserve: int = 0
 
-    def as_dict(self) -> dict[str, float | int | None]:
+    def __post_init__(self) -> None:
+        if self.control_mode not in {"conventional", "destination"}:
+            raise ValueError("control_mode must be conventional or destination")
+        if self.time_step_seconds <= 0:
+            raise ValueError("time_step_seconds must be positive")
+        if self.elevator_capacity <= 0:
+            raise ValueError("elevator_capacity must be positive")
+        if self.capacity_reserve < 0:
+            raise ValueError("capacity_reserve cannot be negative")
+        if self.reassignment_interval_seconds <= 0:
+            raise ValueError("reassignment_interval_seconds must be positive")
+        if self.reassignment_cooldown_seconds < 0:
+            raise ValueError("reassignment_cooldown_seconds cannot be negative")
+        if self.reassignment_min_gain < 0 or self.reassignment_min_eta_gain_seconds < 0:
+            raise ValueError("reassignment gain thresholds cannot be negative")
+        if self.max_noncapacity_reassignments_per_call < 0:
+            raise ValueError("max_noncapacity_reassignments_per_call cannot be negative")
+
+    def as_dict(self) -> dict[str, float | int | str | None]:
         return asdict(self)
 
 
@@ -104,6 +134,9 @@ class Metrics:
     served_count: int = 0
     missed_capacity: int = 0
     abandoned_count: int = 0
+    assignment_count: int = 0
+    reassignment_count: int = 0
+    invalidation_count: int = 0
 
     def snapshot(self, elapsed_seconds: float) -> dict[str, float | int]:
         waits = sorted(self.wait_times)
@@ -128,5 +161,7 @@ class Metrics:
             "arrivals": self.arrival_count,
             "missed_capacity": self.missed_capacity,
             "abandoned": self.abandoned_count,
+            "assignments": self.assignment_count,
+            "reassignments": self.reassignment_count,
+            "invalidations": self.invalidation_count,
         }
-

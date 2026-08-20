@@ -56,14 +56,20 @@ first evidence interpretation; CAPR is traffic-regime dependent rather than glob
 
 ## M4 — live digital twin and replay
 
-- [ ] 18-floor animated building, six cars and passenger queues;
-- [ ] live assignment/reassignment links and capacity-pass visualization;
-- [ ] metrics time series and floor heatmap;
-- [ ] experiment comparison screen;
-- [ ] deterministic saved-run replay with scrubber;
-- [ ] responsive visual QA and screenshot evidence.
+- [x] 18-floor animated building, six cars and passenger queues;
+- [x] live assignment/reassignment links and capacity-pass visualization;
+- [x] wait/queue time series and floor heatmap;
+- [x] experiment comparison screen sourced from the M3 evidence baseline;
+- [x] deterministic saved-run replay with scrubber;
+- [x] decision inspector and dispatch event stream;
+- [x] responsive visual QA and committed screenshot evidence.
 
-**Gate:** no chart uses fabricated values; a browser test verifies visible state against API state.
+**Gate:** no chart uses fabricated values. Playwright runs a real shock/CAPR simulation through a
+predictive reassignment, pauses it, compares visible clock/queue/wait metrics, all six cars, active
+calls/assignment links, decision candidates and all 18 floor queue cells against `/api/snapshot`,
+saves the run, then repeats the comparison against `/api/replay`. Desktop and
+390px mobile screenshots come from that verified browser run; the desktop image is preserved at
+`docs/assets/m4-dashboard.png` for README visual QA.
 
 ## M5 — learned control
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Live elevator group-control research digital twin with replay and statistical evidence" />
     <title>Elevator Queue Lab</title>
-    <link rel="stylesheet" href="/styles.css?v=counterflow-theory-v1" />
+    <link rel="stylesheet" href="/styles.css?v=counterflow-takeaway-v2" />
   </head>
   <body>
     <div class="shell">
@@ -271,6 +271,22 @@
           </div>
           <span class="tag accent">discovery + held-out falsification</span>
         </div>
+        <aside id="theory-takeaway" class="theory-takeaway" aria-label="Counterflow criticality key takeaway">
+          <div class="theory-takeaway-label">KEY TAKEAWAY</div>
+          <div class="theory-takeaway-copy">
+            <strong>Congestion alone is not the trigger.</strong>
+            <p>
+              Continuous reassignment becomes valuable when <b>heavy traffic and enough counterflow rise together</b>,
+              making stale assignments expensive to keep. In short: do not reassign just because the system is busy;
+              reassign when directional competition is high enough to justify the churn.
+            </p>
+          </div>
+          <div class="theory-takeaway-example" aria-label="Morning and lunch counterflow examples">
+            <span><b>Morning</b><strong>B 2.56</strong><small>heavy but mostly one-way → stay low-churn</small></span>
+            <i aria-hidden="true">→</i>
+            <span><b>Lunch</b><strong>B 15.84</strong><small>heavy + counterflow → predictive reassignment pays</small></span>
+          </div>
+        </aside>
         <div class="theory-intro">
           <div class="theory-formula-card">
             <span>Candidate state variable</span>
@@ -329,7 +345,7 @@
         <span>M0–M7 research release · controlled phase sweep · held-out falsification</span>
       </footer>
     </div>
-    <script type="module" src="/app.js?v=counterflow-theory-v1"></script>
-    <script type="module" src="/queue-trend.js?v=counterflow-theory-v1"></script>
+    <script type="module" src="/app.js?v=counterflow-takeaway-v2"></script>
+    <script type="module" src="/queue-trend.js?v=counterflow-takeaway-v2"></script>
   </body>
 </html>

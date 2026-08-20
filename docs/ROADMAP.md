@@ -129,4 +129,5 @@ demo without private infrastructure.
 - [x] preserve the negative result that the threshold is fuzzy rather than a universal critical constant;
 - [x] generate a paper-style M7 report and evidence figure from committed artifacts;
 - [x] expose discovery + held-out theory evidence in the live dashboard through `/api/theory`;
-- [ ] deploy the M7 theory dashboard and re-verify the public demo.
+- [x] deploy the M7 theory dashboard and re-verify the public demo;
+- [x] elevate the counterflow-criticality operating rule into a first-read key takeaway in the public dashboard and README.

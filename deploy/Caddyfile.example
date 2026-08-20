@@ -1,0 +1,4 @@
+# Dedicated public host. Keep this as its own site block.
+elevator.oosu.dev {
+    reverse_proxy 127.0.0.1:4174
+}

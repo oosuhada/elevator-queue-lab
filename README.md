@@ -10,8 +10,10 @@ treating the stale assignment as valid. The project turns that observation into 
 simulation and optimization problem.
 
 The target building has **18 floors and six passenger elevators**: three low-zone cars and three
-high-zone cars. Synthetic office traffic changes through morning arrival, lunch inter-floor flow,
-normal traffic and evening departure. Every passenger is represented from arrival at a hall call
+high-zone cars. The default synthetic workplace mix is deliberately lobby-centric: **85% of trips
+touch 1F, 10% use 18F as a roof-access proxy and only 5% are same-bank inter-floor trips**. Time of
+day changes the direction of that mix rather than inventing dense floor-to-floor traffic. Every
+passenger is represented from arrival at a hall call
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
@@ -59,21 +61,20 @@ superiority**.
 - Playwright browser verification that visible metrics, all six cars and all 18 floor queues match API/replay state;
 - responsive desktop/mobile visual QA with screenshots generated from that same verified browser run.
 
-## First 30-seed evidence: CAPR is regime-dependent
+## 30-seed evidence: CAPR is regime-dependent
 
 The first M3 matrix runs **30 seeds × 6 scenarios × 5 policies = 900 controller simulations** with
 the same passenger trace for every policy at a given seed. It deliberately does not produce a
 single global winner.
 
-- **Lunch:** CAPR is a clean candidate improvement: collective mean wait **24.15 s → 22.16 s** while
+- **Lunch:** CAPR is a clean candidate improvement: collective mean wait **24.84 s → 21.77 s** while
   the configured tail/fairness/energy guardrails remain within tolerance.
-- **Normal:** CAPR improves mean wait **16.18 s → 12.04 s** and P95 **42.52 s → 26.81 s**, but the
-  energy proxy rises **424 → 1122**, so the result is classified as a tradeoff rather than a win.
-- **Mixed day:** CAPR strongly reduces wait (**50.26 s → 14.66 s**) but roughly doubles the energy
-  proxy (**858 → 1734**), again triggering the energy guardrail.
-- **Morning / evening / shock:** current CAPR does not beat collective on mean wait.
-- **Morning:** the simpler nearest-car baseline is the strongest unconditional candidate in this
-  short-window benchmark, useful evidence against forcing the project narrative toward CAPR.
+- **Morning:** CAPR improves collective **35.70 s → 24.45 s**, but energy rises **801 → 1005**;
+  simpler sticky/nearest baselines are faster still, so CAPR is not the right default here.
+- **Normal:** CAPR improves mean wait **18.12 s → 11.48 s** and P95 **49.59 s → 25.38 s**, but the
+  energy proxy rises **524 → 1113**, so the result remains a tradeoff.
+- **Mixed day:** CAPR strongly reduces wait (**39.32 s → 15.20 s**) but energy rises **893 → 1711**.
+- **Evening / shock:** current CAPR does not beat collective on mean wait in the M3 baseline.
 
 See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are reproducible
 simulation results, **not real-building performance claims**.
@@ -85,12 +86,12 @@ traffic regimes, while evaluation uses seeds **21–30**. `mixed_day` is exclude
 serves as the held-out traffic mixture. Collective, CAPR and RL see the same passenger trace for
 each held-out scenario/seed.
 
-- **Morning:** collective 14.60 s mean wait vs RL 27.87 s.
-- **Lunch:** 24.37 s vs RL 29.88 s.
-- **Normal:** 15.22 s vs RL 25.72 s.
-- **Evening:** 18.35 s vs RL 30.67 s.
-- **Shock:** 22.46 s vs RL 31.90 s.
-- **Held-out mixed day:** collective 49.71 s vs RL 40.20 s; this is the only M5 scenario classified
+- **Morning:** collective 34.16 s mean wait vs RL 42.24 s.
+- **Lunch:** 22.47 s vs RL 34.79 s.
+- **Normal:** 17.50 s vs RL 22.83 s.
+- **Evening:** 20.69 s vs RL 34.76 s.
+- **Shock:** 21.84 s vs RL 35.08 s.
+- **Held-out mixed day:** collective 37.72 s vs RL 35.72 s; this is the only M5 scenario classified
   as a guardrail-clean candidate improvement.
 
 So the checked-in Dueling Double DQN **does not pass the general-superiority gate**. Five traffic
@@ -100,9 +101,10 @@ See `docs/M5_MODEL_CARD.md` and `evidence/m5-heldout-evaluation.json`.
 
 ## Final 30-seed held-out release evidence
 
-M6 keeps the exact M5 checkpoint fixed and expands the release evaluation to **30 disjoint
+M6 keeps the exact retrained M5 checkpoint fixed and expands the release evaluation to **30 disjoint
 held-out passenger seeds (21–50)**. The overall conclusion is unchanged: CAPR is a clean candidate
-only in lunch traffic, while normal/mixed traffic expose a strong service/energy trade-off; the RL
+only in lunch traffic, while morning/normal/evening/shock/mixed traffic all expose either no gain or
+a service/energy trade-off; the RL
 checkpoint improves only the unseen `mixed_day` mixture and is not a general replacement for the
 heuristic controllers.
 

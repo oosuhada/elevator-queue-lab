@@ -48,7 +48,8 @@ def generate_scenario_trace(name: str, duration_seconds: int, seed: int) -> Pass
 
 def _shock_trace(duration_seconds: int, seed: int) -> PassengerTrace:
     base = generate_trace("evening", duration_seconds, seed)
-    extra = DemandModel("evening", seed + 50_000)
+    extra = DemandModel("shock", seed + 50_000)
+    hotspot_floor = 16
     burst_start = max(1, int(duration_seconds * 0.35))
     burst_end = max(burst_start, int(duration_seconds * 0.60))
     events = [
@@ -65,7 +66,7 @@ def _shock_trace(duration_seconds: int, seed: int) -> PassengerTrace:
     for second in range(1, duration_seconds + 1):
         count = extra.arrivals_this_second()
         for _ in range(count):
-            origin, destination = extra.trip()
+            origin, destination = extra.trip_from_hotspot(hotspot_floor)
             if burst_start <= second <= burst_end:
                 events.append(
                     DemandEvent(

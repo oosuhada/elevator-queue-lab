@@ -439,7 +439,11 @@ async function refresh() {
   if (displayMode !== "live") return;
   try {
     const response = await fetch("/api/snapshot", { cache: "no-store" });
-    if (response.ok) render(await response.json());
+    const snapshot = response.ok ? await response.json() : null;
+    // A refresh may have started in live mode just before the user enters replay.
+    // Re-check the mode after the network await so a late live response cannot
+    // overwrite the deterministic replay frame on a public/remote connection.
+    if (snapshot && displayMode === "live") render(snapshot);
   } catch (error) {
     console.error(error);
   }

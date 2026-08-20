@@ -331,6 +331,21 @@ class CAPRPolicy:
         return 5 if elevator.bank == "low" else 14
 
 
+@dataclass(slots=True)
+class CAPRStaticPolicy(CAPRPolicy):
+    """CAPR ablation with identical scoring/parking but no continuous reassignment.
+
+    This policy exists for theory extraction experiments.  Its first assignment decision is
+    produced by the exact same CAPR scorer, and it uses the same parking targets.  The only
+    behavioral switch is that an already-owned call is not periodically reconsidered.  Comparing
+    this policy with ``capr`` therefore isolates the value of continuous predictive reassignment
+    much more cleanly than comparing CAPR with an unrelated baseline.
+    """
+
+    name: str = "capr_static"
+    continuous_reassignment: bool = False
+
+
 def build_policy(
     name: str,
     weights: QueueWeights | None = None,
@@ -347,6 +362,8 @@ def build_policy(
         return QueueAwarePolicy(weights=weights or QueueWeights(), name=name)
     if name == "capr":
         return CAPRPolicy()
+    if name == "capr_static":
+        return CAPRStaticPolicy()
     if name == "rl":
         from pathlib import Path
 

@@ -42,13 +42,17 @@ it does not claim CAPR is superior. Statistical superiority belongs to M3.
 
 ## M3 — experiment and statistics engine
 
-- [ ] 30+ seed common-random-number Monte Carlo runner;
-- [ ] confidence intervals/effect sizes;
-- [ ] P50/P95/P99, journey time, fairness, capacity miss and energy proxy;
-- [ ] scenario matrix: morning/lunch/normal/evening/shock/mixed day;
-- [ ] JSON/CSV experiment artifacts and regression baseline.
+- [x] 30+ seed common-random-number Monte Carlo runner;
+- [x] confidence intervals/effect sizes;
+- [x] P50/P95/P99, journey time, fairness, capacity miss, reassignment latency and energy proxy;
+- [x] scenario matrix: morning/lunch/normal/evening/shock/mixed day;
+- [x] JSON/CSV experiment artifacts and checked-in regression baseline.
 
-**Gate:** one command creates a complete policy-comparison artifact with reproducible metadata.
+**Gate:** one command creates a complete policy-comparison artifact with explicit zero-warm-up /
+measurement-window metadata, identical per-seed traces, paired effect sizes and guardrail
+classification. CI executes the 30-seed × 6-scenario × 5-policy matrix and compares headline metrics
+and trace manifests against `evidence/m3-regression-baseline.json`. See `docs/M3_FINDINGS.md` for the
+first evidence interpretation; CAPR is traffic-regime dependent rather than globally superior.
 
 ## M4 — live digital twin and replay
 

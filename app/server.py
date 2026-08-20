@@ -24,7 +24,7 @@ class SimulationRunner:
         self.running = True
         self.speed = 20
         self.scenario = "morning"
-        self.policy = "queue_aware"
+        self.policy = "capr"
         self.simulation = ElevatorSimulation(self.scenario, self.policy)
         self.closed = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True)
@@ -127,4 +127,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

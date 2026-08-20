@@ -45,6 +45,8 @@ SUMMARY_METRICS = (
     "capacity_misses",
     "reassignments",
     "invalidations",
+    "avg_reassignment_latency",
+    "p95_reassignment_latency",
     "abandoned",
     "distance_m",
     "energy_proxy",
@@ -63,6 +65,8 @@ LOWER_IS_BETTER = {
     "p99_journey",
     "unfinished",
     "capacity_misses",
+    "avg_reassignment_latency",
+    "p95_reassignment_latency",
     "abandoned",
     "distance_m",
     "energy_proxy",
@@ -70,6 +74,20 @@ LOWER_IS_BETTER = {
     "floor_wait_gap",
     "floor_wait_std",
 }
+
+
+def measurement_window(seconds: int) -> dict[str, int]:
+    if seconds <= 0:
+        raise ValueError("seconds must be positive")
+    # M3 uses synthetic traces from t=0 and intentionally has no warm-up period.
+    # Keeping this explicit in every artifact prevents later benchmark runs from
+    # silently changing the measurement window.
+    return {
+        "warmup_seconds": 0,
+        "measurement_start_seconds": 0,
+        "measurement_seconds": seconds,
+        "measurement_end_seconds": seconds,
+    }
 
 
 def run_scenario(
@@ -81,6 +99,7 @@ def run_scenario(
 ) -> dict[str, object]:
     if seeds <= 0:
         raise ValueError("seeds must be positive")
+    window = measurement_window(seconds)
     config = SimulationConfig(control_mode=control_mode)
     traces = {
         seed: generate_scenario_trace(scenario, seconds, seed)
@@ -109,6 +128,10 @@ def run_scenario(
                     "policy": policy,
                     "seed": seed,
                     "trace_digest": trace.digest,
+                    "warmup_seconds": window["warmup_seconds"],
+                    "measurement_start_seconds": window["measurement_start_seconds"],
+                    "measurement_seconds": window["measurement_seconds"],
+                    "measurement_end_seconds": window["measurement_end_seconds"],
                     **analysis,
                 }
             )
@@ -171,11 +194,29 @@ def run_scenario(
         "segments": list(SCENARIO_METADATA[scenario].segments),
         "seconds": seconds,
         "seeds": seeds,
+        "measurement_window": window,
         "trace_digests": {
             str(seed): trace.digest for seed, trace in traces.items()
         },
         "policies": summaries,
         "raw_runs": raw_runs,
+    }
+
+
+def _interpretation() -> dict[str, str]:
+    return {
+        "effect_size": "paired Cohen's dz on per-seed candidate minus collective outcomes",
+        "ci": "normal-approximation 95% confidence interval half-width across seeded runs",
+        "energy_proxy": "unitless comparative proxy; not measured kWh",
+        "reassignment_latency": (
+            "seconds from the start of a hall/destination assignment ownership interval "
+            "to a subsequent reassignment of the same call key; zero when no reassignment occurs"
+        ),
+        "warmup": "M3 synthetic benchmarks explicitly use a zero-second warm-up window",
+        "guardrail_rule": (
+            "mean-wait improvement is not an unconditional win if P95 wait >5%, "
+            "worst-floor mean wait >5s, or energy proxy >10% worse than collective"
+        ),
     }
 
 
@@ -192,6 +233,7 @@ def run_experiment(
         "reference_policy": REFERENCE_POLICY,
         "common_random_numbers": True,
         "control_mode": control_mode,
+        "measurement_window": measurement_window(seconds),
         "simulation_config": config.as_dict(),
         "scenario_matrix": [
             run_scenario(
@@ -201,15 +243,7 @@ def run_experiment(
                 control_mode=control_mode,
             )
         ],
-        "interpretation": {
-            "effect_size": "paired Cohen's dz on per-seed candidate minus collective outcomes",
-            "ci": "normal-approximation 95% confidence interval half-width across seeded runs",
-            "energy_proxy": "unitless comparative proxy; not measured kWh",
-            "guardrail_rule": (
-                "mean-wait improvement is not an unconditional win if P95 wait >5%, "
-                "worst-floor mean wait >5s, or energy proxy >10% worse than collective"
-            ),
-        },
+        "interpretation": _interpretation(),
     }
 
 
@@ -227,6 +261,7 @@ def run_matrix(
         "reference_policy": REFERENCE_POLICY,
         "common_random_numbers": True,
         "control_mode": control_mode,
+        "measurement_window": measurement_window(seconds),
         "simulation_config": config.as_dict(),
         "scenario_matrix": [
             run_scenario(
@@ -237,15 +272,7 @@ def run_matrix(
             )
             for scenario in selected
         ],
-        "interpretation": {
-            "effect_size": "paired Cohen's dz on per-seed candidate minus collective outcomes",
-            "ci": "normal-approximation 95% confidence interval half-width across seeded runs",
-            "energy_proxy": "unitless comparative proxy; not measured kWh",
-            "guardrail_rule": (
-                "mean-wait improvement is not an unconditional win if P95 wait >5%, "
-                "worst-floor mean wait >5s, or energy proxy >10% worse than collective"
-            ),
-        },
+        "interpretation": _interpretation(),
     }
 
 
@@ -314,6 +341,7 @@ def _compact_console_summary(payload: dict[str, object]) -> dict[str, object]:
     return {
         "schema": payload["schema"],
         "reference_policy": payload["reference_policy"],
+        "measurement_window": payload["measurement_window"],
         "scenarios": scenarios,
     }
 

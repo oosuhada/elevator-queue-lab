@@ -24,6 +24,9 @@ jobs:
         run: |
           mkdir -p evidence
           python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
+      - name: M3 statistical regression baseline
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        run: python scripts/check_regression_baseline.py evidence/m3-evidence.json
       - name: Upload M3 evidence artifacts
         if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
         uses: actions/upload-artifact@v4

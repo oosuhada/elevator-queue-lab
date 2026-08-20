@@ -1,51 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="650" viewBox="0 0 1120 650">
 <rect width="100%" height="100%" fill="#07121a"/>
 <text x="92" y="35" fill="#e6f1f7" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Wait–energy trade-off vs collective</text>
-<text x="92" y="56" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Lower-left is the desired quadrant; percentages use 30 held-out seed means</text>
-<rect x="92" y="70" width="499.8" height="361.6" fill="#173c34" opacity="0.25"/>
-<line x1="591.8" y1="70" x2="591.8" y2="550" stroke="#607986" stroke-width="1.2"/>
-<line x1="92" y1="431.6" x2="1085" y2="431.6" stroke="#607986" stroke-width="1.2"/>
-<text x="99.4" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-75%</text>
-<text x="263.5" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-50%</text>
-<text x="427.7" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-25%</text>
-<text x="591.8" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+0%</text>
-<text x="756.0" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+25%</text>
-<text x="920.1" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+50%</text>
-<text x="1084.2" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+75%</text>
-<text x="80" y="539.1" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-50%</text>
-<text x="80" y="487.4" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-25%</text>
-<text x="80" y="435.6" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+0%</text>
-<text x="80" y="383.8" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+25%</text>
-<text x="80" y="332.0" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+50%</text>
-<text x="80" y="280.2" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+75%</text>
-<text x="80" y="228.4" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+100%</text>
-<text x="80" y="176.6" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+125%</text>
-<text x="80" y="124.8" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+150%</text>
+<text x="92" y="56" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">85% lobby / 10% roof / 5% inter-floor · lower-left is the desired quadrant</text>
+<rect x="92" y="70" width="504.4" height="305.7" fill="#173c34" opacity="0.25"/>
+<line x1="596.4" y1="70" x2="596.4" y2="550" stroke="#607986" stroke-width="1.2"/>
+<line x1="92" y1="375.7" x2="1085" y2="375.7" stroke="#607986" stroke-width="1.2"/>
+<text x="253.6" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-50%</text>
+<text x="425.0" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-25%</text>
+<text x="596.4" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+0%</text>
+<text x="767.8" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+25%</text>
+<text x="939.3" y="574" text-anchor="middle" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+50%</text>
+<text x="80" y="503.3" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-50%</text>
+<text x="80" y="441.5" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">-25%</text>
+<text x="80" y="379.7" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+0%</text>
+<text x="80" y="317.9" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+25%</text>
+<text x="80" y="256.1" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+50%</text>
+<text x="80" y="194.3" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+75%</text>
+<text x="80" y="132.5" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="10">+100%</text>
 <text x="588.5" y="602" text-anchor="middle" fill="#a9bdc8" font-family="system-ui,sans-serif" font-size="12">Mean-wait change vs collective →</text>
 <text transform="translate(22 310.0) rotate(-90)" text-anchor="middle" fill="#a9bdc8" font-family="system-ui,sans-serif" font-size="12">Energy-proxy change vs collective →</text>
-<circle cx="696.8" cy="363.1" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="708.8" y="355.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">AM CAPR</text>
-<rect x="1025.5" y="418.6" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="1020.5" y="417.6" text-anchor="end" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">AM RL</text>
-<circle cx="517.5" cy="428.9" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="529.5" y="420.9" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">LU CAPR</text>
-<rect x="762.5" y="518.1" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="781.5" y="517.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">LU RL</text>
-<circle cx="356.4" cy="94.9" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="368.4" y="86.9" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">NO CAPR</text>
-<rect x="780.9" y="274.0" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="799.9" y="273.0" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">NO RL</text>
-<circle cx="589.9" cy="397.1" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="601.9" y="389.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">PM CAPR</text>
-<rect x="977.4" y="515.1" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="996.4" y="514.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">PM RL</text>
-<circle cx="618.4" cy="400.1" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="630.4" y="392.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">SH CAPR</text>
-<rect x="933.4" y="511.3" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="952.4" y="510.3" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">SH RL</text>
-<circle cx="144.5" cy="199.9" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
-<text x="156.5" y="191.9" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">MX CAPR</text>
-<rect x="442.1" y="416.5" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
-<text x="461.1" y="415.5" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">MX RL</text>
+<circle cx="447.2" cy="312.2" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="459.2" y="304.2" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">AM CAPR</text>
+<rect x="759.4" y="447.0" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="778.4" y="446.0" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">AM RL</text>
+<circle cx="533.3" cy="374.7" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="545.3" y="366.7" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">LU CAPR</text>
+<rect x="863.4" y="513.3" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="882.4" y="512.3" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">LU RL</text>
+<circle cx="293.9" cy="99.7" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="305.9" y="91.7" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">NO CAPR</text>
+<rect x="724.9" y="294.3" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="743.9" y="293.3" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">NO RL</text>
+<circle cx="573.6" cy="331.5" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="585.6" y="323.5" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">PM CAPR</text>
+<rect x="1023.1" y="497.4" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="1018.1" y="496.4" text-anchor="end" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">PM RL</text>
+<circle cx="562.1" cy="338.1" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="574.1" y="330.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">SH CAPR</text>
+<rect x="940.2" y="485.7" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="959.2" y="484.7" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">SH RL</text>
+<circle cx="146.9" cy="174.6" r="8" fill="#4dd7d1" stroke="#e6f1f7" stroke-width="1"/>
+<text x="158.9" y="166.6" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">MX CAPR</text>
+<rect x="476.9" y="422.1" width="14" height="14" rx="2" fill="#f1b86a" stroke="#e6f1f7" stroke-width="1"/>
+<text x="495.9" y="421.1" text-anchor="start" fill="#dce8ee" font-family="system-ui,sans-serif" font-size="10">MX RL</text>
 <text x="1085" y="630" text-anchor="end" fill="#637b89" font-family="system-ui,sans-serif" font-size="10">AM morning · LU lunch · NO normal · PM evening · SH shock · MX mixed day</text>
 </svg>

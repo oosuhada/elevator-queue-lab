@@ -10,13 +10,15 @@ outcome is observed.
 
 ## 2. Exact target system
 
-- Building: 18 occupied floors, lobby at 1F.
+- Building: 18 served floors, lobby at 1F; 18F is also the current synthetic roof-access proxy.
 - Cars: 6 total.
 - Low bank: L1–L3, lobby + 2F–9F.
 - High bank: H1–H3, lobby + 10F–18F.
 - Default nominal capacity: 14 passengers/car, configurable.
 - Traffic regimes: morning up-peak, lunch mixed, normal mixed, evening down-peak, demand shock.
 - Passenger model: individual origin, destination, arrival, assignment, boarding and arrival times.
+- Default synthetic trip-purpose prior: 85% lobby-linked, 10% top-floor/roof-access, 5% same-bank
+  inter-floor. 18F acts as the roof-access proxy until multi-leg rooftop transfers are modeled.
 - Control modes: conventional direction hall calls first; destination control as a later milestone.
 
 The observed real building motivates the configuration, but no claim is made that its proprietary

@@ -19,6 +19,7 @@ from app.analytics import (
     summarize_metric,
 )
 from app.domain import SimulationConfig
+from app.demand import demand_contract
 from app.scenarios import SCENARIOS, SCENARIO_METADATA, generate_scenario_trace
 from app.simulator import ElevatorSimulation
 
@@ -230,6 +231,7 @@ def run_experiment(
     config = SimulationConfig(control_mode=control_mode)
     return {
         "schema": "elevator-queue-lab.experiment.v2",
+        "demand_contract": demand_contract(),
         "reference_policy": REFERENCE_POLICY,
         "common_random_numbers": True,
         "control_mode": control_mode,
@@ -258,6 +260,7 @@ def run_matrix(
     selected = tuple(scenarios)
     return {
         "schema": "elevator-queue-lab.experiment.v2",
+        "demand_contract": demand_contract(),
         "reference_policy": REFERENCE_POLICY,
         "common_random_numbers": True,
         "control_mode": control_mode,

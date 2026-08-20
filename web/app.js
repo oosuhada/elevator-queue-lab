@@ -33,13 +33,13 @@ function floorBottomPercent(floor) {
 function buildBuilding() {
   for (let floor = 1; floor <= FLOOR_COUNT; floor += 1) {
     const label = document.createElement("div");
-    label.className = "floor-label";
-    label.textContent = `${floor}F`;
+    label.className = `floor-label ${floor === FLOOR_COUNT ? "roof-access" : ""}`;
+    label.textContent = floor === FLOOR_COUNT ? `${floor}F · ROOF` : `${floor}F`;
     label.style.bottom = `calc(${floorBottomPercent(floor)}% - 4px)`;
     floorLabels.appendChild(label);
 
     const line = document.createElement("div");
-    line.className = `floor-line ${floor === 1 ? "lobby" : ""}`;
+    line.className = `floor-line ${floor === 1 ? "lobby" : ""} ${floor === FLOOR_COUNT ? "roof-access" : ""}`;
     line.dataset.floor = String(floor);
     line.style.bottom = `${floorBottomPercent(floor)}%`;
     floors.appendChild(line);
@@ -64,7 +64,7 @@ function buildBuilding() {
     cell.className = "heat-cell";
     cell.dataset.floor = String(floor);
     cell.dataset.queue = "0";
-    cell.innerHTML = `<span>${floor}F</span><strong>0</strong>`;
+    cell.innerHTML = `<span>${floor === FLOOR_COUNT ? `${floor}R` : `${floor}F`}</span><strong>0</strong>`;
     heatmap.appendChild(cell);
     heatmapElements.set(String(floor), cell);
   }

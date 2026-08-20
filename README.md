@@ -54,6 +54,8 @@ superiority**.
 - M3 decision dashboard backed by the checked-in regression evidence baseline: guardrail-aware
   policy ranking, raw speed rank, 95% CI/tail/fairness/energy table and a KDE over the 30 actual
   per-seed average-wait observations for each dispatch policy;
+- M7 counterflow-criticality panel backed by a CAPR-vs-CAPR-static ablation, controlled λ/p phase
+  sweep and an unseen-grid falsification run rather than hand-entered theory claims;
 - Gymnasium-compatible M5 dispatch MDP with a 77-value observation, seven masked actions and an
   explicit wait/tail/fairness/capacity/energy reward contract;
 - dependency-free Dueling Double DQN learned policy, checked-in model artifact and deterministic
@@ -80,6 +82,43 @@ single global winner.
 
 See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are reproducible
 simulation results, **not real-building performance claims**.
+
+## M7 theory candidate: counterflow criticality
+
+The scenario-level result suggested a deeper question: why is predictive reassignment useful in
+lunch-like traffic but wasteful in strongly one-way peaks? M7 isolates that mechanism with
+`capr_static`, which uses the same CAPR scoring and parking logic while disabling only continuous
+reconsideration of already-owned calls.
+
+Across **40 controlled traffic cells × 30 seeds × 3 policies = 3,600 discovery runs**, a normalized
+bidirectional-load index
+
+`B = λ × 4p↑(1 − p↑)`
+
+tracks the marginal CAPR reassignment effect: discovery correlation with CAPR-minus-static average
+wait is **r = −0.748**. Low-B cells show reassignment churn; high-B cells increasingly benefit from
+predictive ownership changes. A strict 95%-CI gain trigger near **B ≈ 12.33** classifies 87.5% of
+the discovery grid.
+
+The trigger was frozen and tested on **18 unseen λ/p cells × 30 seeds = 1,080 additional
+paired-policy runs**. Accuracy drops to **72.2%**, so the repository explicitly rejects a hard
+universal critical-constant claim. It still captures every held-out CI-supported gain, and the
+continuous discovery equation generalizes with held-out effect correlation **r = 0.672** and
+**0.805 s MAE**.
+
+Applying the frozen B trigger as an offline selector on those held-out cells keeps **88.1% of the
+always-on CAPR wait gain while reducing CAPR's additional energy overhead by 58.3%**. This makes the
+candidate theory operational: richer reassignment may be best treated as a gated intervention,
+not a permanently active feature.
+
+The current result is therefore a **Counterflow Criticality Hypothesis**: continuous predictive
+reassignment appears to undergo a fuzzy transition from churn to useful intervention as directional
+competition and traffic intensity increase together. It is a project-specific empirical theory to
+falsify on other building sizes, capacities and trip-purpose mixes—not a claimed universal theorem
+or established algorithmic novelty. See
+[`docs/M7_COUNTERFLOW_CRITICALITY.md`](docs/M7_COUNTERFLOW_CRITICALITY.md).
+
+![M7 counterflow criticality discovery and held-out validation](docs/assets/m7-counterflow-criticality.svg)
 
 ## First held-out learned-controller evidence: negative/mixed
 

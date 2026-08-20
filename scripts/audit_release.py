@@ -23,9 +23,11 @@ REQUIRED = (
     "docs/M5_MODEL_CARD.md",
     "docs/M6_RESEARCH_REPORT.md",
     "docs/M6_EVIDENCE_SUMMARY.md",
+    "docs/M7_COUNTERFLOW_CRITICALITY.md",
     "docs/assets/m6-dashboard.png",
     "docs/assets/m6-heldout-wait.svg",
     "docs/assets/m6-wait-energy-tradeoff.svg",
+    "docs/assets/m7-counterflow-criticality.svg",
     "deploy/README.md",
     "deploy/install_macos.sh",
     "deploy/Caddyfile.example",
@@ -33,6 +35,8 @@ REQUIRED = (
     "evidence/m3-regression-baseline.json",
     "evidence/m5-heldout-evaluation.json",
     "evidence/m6-heldout-30seed.json",
+    "evidence/m7-bidirectional-load-sweep.json",
+    "evidence/m7-threshold-validation.json",
     "models/m5-ddqn-baseline.json",
 )
 FORBIDDEN_TRACKED_PREFIXES = (
@@ -85,7 +89,11 @@ def audit(*, live_url: str | None = None) -> list[str]:
         if relative.startswith(FORBIDDEN_TRACKED_PREFIXES) or "/__pycache__/" in relative:
             errors.append(f"forbidden generated file is tracked: {relative}")
 
-    for markdown in (ROOT / "README.md", ROOT / "docs" / "M6_RESEARCH_REPORT.md"):
+    for markdown in (
+        ROOT / "README.md",
+        ROOT / "docs" / "M6_RESEARCH_REPORT.md",
+        ROOT / "docs" / "M7_COUNTERFLOW_CRITICALITY.md",
+    ):
         if not markdown.is_file():
             continue
         for target in _local_markdown_links(markdown):

@@ -73,6 +73,18 @@ class ServerRunnerTests(unittest.TestCase):
             lunch_capr["guardrail_classification"],
         )
 
+    def test_theory_api_exposes_discovery_and_held_out_validation(self) -> None:
+        payload = self.runner.theory()
+        self.assertEqual("elevator-queue-lab.theory-ui.v1", payload["schema"])
+        discovery = payload["discovery"]
+        validation = payload["validation"]
+        self.assertEqual("elevator-queue-lab.m7-bidirectional-load-theory.v1", discovery["schema"])
+        self.assertEqual("elevator-queue-lab.m7-threshold-validation.v1", validation["schema"])
+        self.assertEqual(40, len(discovery["cells"]))
+        self.assertEqual(18, len(validation["cells"]))
+        self.assertAlmostEqual(12.33, discovery["theory"]["best_single_threshold"]["threshold"], places=2)
+        self.assertTrue(validation["method"]["grid_was_not_used_to_fit_threshold"])
+
     def test_static_assets_disable_intermediary_caching(self) -> None:
         handler = type("TestElevatorQueueHandler", (Handler,), {"runner": self.runner})
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)

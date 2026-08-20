@@ -27,15 +27,18 @@ passenger lifecycle counts.
 
 ## M2 — controller laboratory
 
-- [ ] nearest-car and conventional collective baselines;
-- [ ] route-insertion ETA estimator;
-- [ ] CAPR predictive residual-capacity model;
-- [ ] continuous reassignment with hysteresis to prevent thrashing;
-- [ ] anti-starvation call-age term;
-- [ ] demand-aware parking/pre-positioning;
-- [ ] destination-control mode.
+- [x] nearest-car and conventional collective baselines;
+- [x] route-insertion ETA estimator;
+- [x] CAPR predictive residual-capacity model;
+- [x] continuous reassignment with hysteresis to prevent thrashing;
+- [x] anti-starvation call-age term;
+- [x] demand-aware parking/pre-positioning;
+- [x] destination-control mode.
 
-**Gate:** every assignment decision records candidate scores and a human-readable reason.
+**Gate:** every assignment decision records candidate scores and a human-readable reason. The
+controller also has regression coverage for the motivating 17F-full / 16F-waiting case, all-full
+ownership stability and non-capacity reassignment budgeting. M2 establishes a testable controller;
+it does not claim CAPR is superior. Statistical superiority belongs to M3.
 
 ## M3 — experiment and statistics engine
 
@@ -81,4 +84,3 @@ energy guardrails. Otherwise the report explicitly records the negative result.
 
 **Gate:** a reviewer can clone, reproduce one benchmark, understand the hypothesis and open a live
 demo without private infrastructure.
-

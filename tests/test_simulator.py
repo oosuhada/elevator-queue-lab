@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from app.dispatch import estimate_route_insertion
-from app.domain import Passenger, SimulationConfig
+from app.domain import Elevator, HallCall, Passenger, SimulationConfig
 from app.physics import MotionProfile, service_dwell_seconds
 from app.policies import build_policy
 from app.simulator import ElevatorSimulation
@@ -162,6 +162,68 @@ class SimulationTests(unittest.TestCase):
         h1 = next(item for item in latest["candidates"] if item["elevator_id"] == "H1")
         self.assertFalse(h1["feasible"])
         self.assertEqual(0, h1["residual_capacity"])
+
+    def test_capr_holds_current_owner_when_all_compatible_cars_are_full(self) -> None:
+        config = SimulationConfig(elevator_capacity=2, capacity_reserve=0)
+        policy = build_policy("capr")
+        call = HallCall(
+            floor=16,
+            direction=-1,
+            bank="high",
+            created_at=0.0,
+            assigned_elevator="H1",
+            assigned_at=0.0,
+        )
+        cars = [
+            Elevator(
+                "H1",
+                "high",
+                17.0,
+                capacity=2,
+                onboard=[
+                    Passenger(100, 17, 1, 0.0, boarded_at=0.0),
+                    Passenger(101, 17, 1, 0.0, boarded_at=0.0),
+                ],
+            ),
+            Elevator(
+                "H2",
+                "high",
+                16.1,
+                capacity=2,
+                onboard=[
+                    Passenger(102, 18, 1, 0.0, boarded_at=0.0),
+                    Passenger(103, 18, 1, 0.0, boarded_at=0.0),
+                ],
+            ),
+        ]
+        decision = policy.decide(call, cars, config, queue_size=1, now=5.0)
+        self.assertEqual("H1", decision.chosen_elevator_id)
+        self.assertIn("all compatible cars", decision.reason)
+
+    def test_capr_limits_noncapacity_reassignment_to_call_budget(self) -> None:
+        config = SimulationConfig(
+            reassignment_cooldown_seconds=0.0,
+            reassignment_min_gain=0.0,
+            reassignment_min_eta_gain_seconds=0.0,
+            max_noncapacity_reassignments_per_call=1,
+        )
+        policy = build_policy("capr")
+        call = HallCall(
+            floor=16,
+            direction=-1,
+            bank="high",
+            created_at=0.0,
+            assigned_elevator="H1",
+            assigned_at=0.0,
+            reassignment_count=1,
+        )
+        cars = [
+            Elevator("H1", "high", 10.0),
+            Elevator("H2", "high", 16.1),
+        ]
+        decision = policy.decide(call, cars, config, queue_size=1, now=20.0)
+        self.assertEqual("H1", decision.chosen_elevator_id)
+        self.assertIn("budget exhausted", decision.reason)
 
     def test_destination_control_separates_calls_by_destination(self) -> None:
         config = SimulationConfig(control_mode="destination")

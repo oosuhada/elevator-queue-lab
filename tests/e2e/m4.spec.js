@@ -16,6 +16,14 @@ test("live UI and deterministic replay match API state", async ({ page, request,
   await expect(page.locator("#policy-ranking-body tr").first()).toHaveAttribute("data-policy", "capr");
   await expect(page.locator("#comparison-cards .comparison-card").first()).toHaveAttribute("data-policy", "capr");
   await expect(page.locator("#policy-leaders .policy-leader.primary strong")).toHaveText("CAPR");
+  await expect(page.locator("#theory-takeaway")).toBeVisible();
+  await expect(page.locator("#theory-takeaway .theory-takeaway-copy > strong"))
+    .toHaveText("Congestion alone is not the trigger.");
+  await expect(page.locator("#theory-takeaway")).toContainText("heavy traffic and enough counterflow rise together");
+  await expect(page.locator("#theory-takeaway")).toContainText("Morning");
+  await expect(page.locator("#theory-takeaway")).toContainText("B 2.56");
+  await expect(page.locator("#theory-takeaway")).toContainText("Lunch");
+  await expect(page.locator("#theory-takeaway")).toContainText("B 15.84");
   await expect(page.locator("#theory-leaders .theory-leader")).toHaveCount(4);
   await expect(page.locator('#theory-scatter [data-kind="discovery"]')).toHaveCount(40);
   await expect(page.locator('#theory-scatter [data-kind="validation"]')).toHaveCount(18);

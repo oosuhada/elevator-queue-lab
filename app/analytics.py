@@ -48,13 +48,36 @@ def paired_cohens_dz(differences: Iterable[float]) -> float:
     return max(-EFFECT_SIZE_CAP, min(EFFECT_SIZE_CAP, center / spread))
 
 
+def _dispatch_call_key(event: object) -> tuple[int, int | None, str | None, int | None] | None:
+    floor = getattr(event, "floor", None)
+    if floor is None:
+        return None
+    details = getattr(event, "details", {}) or {}
+    direction_raw = details.get("direction")
+    destination_raw = details.get("destination")
+    direction = int(direction_raw) if direction_raw is not None else None
+    destination = int(destination_raw) if destination_raw is not None else None
+    return (int(floor), direction, getattr(event, "bank", None), destination)
+
+
 def analyze_simulation(simulation: ElevatorSimulation) -> dict[str, float | int | dict[str, float]]:
     arrivals: dict[int, tuple[float, int]] = {}
     wait_by_floor: dict[int, list[float]] = defaultdict(list)
     waits: list[float] = []
     journeys: list[float] = []
+    assignment_started_at: dict[tuple[int, int | None, str | None, int | None], float] = {}
+    reassignment_latencies: list[float] = []
 
     for event in simulation.ledger.events:
+        if event.kind in {"assign", "reassign"}:
+            call_key = _dispatch_call_key(event)
+            if call_key is not None:
+                if event.kind == "reassign":
+                    started_at = assignment_started_at.get(call_key)
+                    if started_at is not None and event.sim_time >= started_at:
+                        reassignment_latencies.append(event.sim_time - started_at)
+                assignment_started_at[call_key] = event.sim_time
+
         passenger_id = event.passenger_id
         if event.kind == "arrival" and passenger_id is not None and event.floor is not None:
             arrivals[passenger_id] = (event.sim_time, event.floor)
@@ -109,6 +132,8 @@ def analyze_simulation(simulation: ElevatorSimulation) -> dict[str, float | int 
         "capacity_misses": int(metrics["missed_capacity"]),
         "reassignments": int(metrics.get("reassignments", 0)),
         "invalidations": int(metrics.get("invalidations", 0)),
+        "avg_reassignment_latency": mean(reassignment_latencies) if reassignment_latencies else 0.0,
+        "p95_reassignment_latency": percentile(reassignment_latencies, 0.95),
         "abandoned": int(metrics.get("abandoned", 0)),
         "distance_m": distance_m,
         "car_departures": departures,

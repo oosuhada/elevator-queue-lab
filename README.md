@@ -2,6 +2,8 @@
 
 **A reproducible elevator group-control research lab for an 18-floor office building.**
 
+**Live demo:** [https://elevator.oosu.dev/](https://elevator.oosu.dev/)
+
 Elevator Queue Lab starts from a practical failure mode: a hall call is assigned to a car, that
 car later becomes full or follows a poor route, and the passenger waits while the controller keeps
 treating the stale assignment as valid. The project turns that observation into a controlled
@@ -15,9 +17,9 @@ outcomes instead of visual car movement alone.
 
 ![Elevator Queue Lab live digital twin](docs/assets/m6-dashboard.png)
 
-The screenshot above is captured from the current simulator UI after the Chromium browser test
-verifies that visible car, queue and service-quality state matches the API/replay contract. It is
-not a mockup or static chart fixture.
+The screenshot above is captured from the deployed public simulator at `elevator.oosu.dev` after
+Chromium verifies the live UI/API contract: all six cars, all 18 floors, the evidence cards, the
+learned-policy control path and simulator audit. It is not a mockup or static chart fixture.
 
 ## Research question
 
@@ -154,13 +156,11 @@ Artifacts explicitly record a zero-second warm-up and the measurement window use
 
 ## Project status
 
-**M0 reproducibility, M1 simulator physics, M2 controller laboratory, M3 statistical evidence,
-M4 live digital twin/replay and M5 learned-control baseline are implemented.** M6 research
-extraction is also complete locally: the fixed checkpoint has a 30-seed held-out release artifact,
-the final report/plots are generated from committed evidence and the repository release audit is
-executable. The remaining M6 release gate is public-demo deployment and external demo QA. The
-public target is the dedicated Mac mini host `https://elevator.oosu.dev/`; it is not considered
-live until the external health/browser checks pass.
+**M0 reproducibility through M6 portfolio release are implemented.** The fixed M5 checkpoint has a
+30-seed held-out release artifact, the final report/plots are generated from committed evidence,
+and the public Mac mini deployment is live at `https://elevator.oosu.dev/`. External Chromium QA
+verifies HTTP 200, six cars, all 18 floors, five evidence cards, the RL `mixed_day` control path,
+simulator audit success, zero failed browser requests and zero console errors.
 `docs/ROADMAP.md` is the canonical work queue and `AGENTS.md` defines the continuation contract for
 future coding sessions.
 

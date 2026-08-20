@@ -1,7 +1,7 @@
 {
   "schema": "elevator-queue-lab.m6-heldout-release.v1",
   "fixed_model": "models/m5-ddqn-baseline.json",
-  "fixed_model_sha256": "11dd1bf7c2adcb8404b7fbfd45062cb1b132bd0e9168cf8e8a10dc0faf965595",
+  "fixed_model_sha256": "04356ce6501a7649b075bdeacd2534e6fa4b154ba5faad5b2219df5f3e2e6630",
   "checkpoint_selection": "fixed final checkpoint from a predeclared deterministic training budget; held-out seeds are never used for checkpoint selection",
   "training_passenger_seeds": [
     1,

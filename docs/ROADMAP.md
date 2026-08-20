@@ -97,8 +97,8 @@ evening/shock all fail the collective mean-wait comparison. See `docs/M5_MODEL_C
 - [x] refresh the README screenshot from the current real simulator UI and pass local browser QA;
 - [x] add and pass an executable clean-repository release audit;
 - [x] prepare an isolated `elevator.oosu.dev` Mac mini service/proxy deployment path;
-- [ ] deploy public demo;
-- [ ] run public demo QA and verify the README live-demo link.
+- [x] deploy the dedicated public demo at `https://elevator.oosu.dev/`;
+- [x] run public health/Chromium QA and verify the README live-demo link.
 
 **Gate:** a reviewer can clone, reproduce one benchmark, understand the hypothesis and open a live
 demo without private infrastructure.

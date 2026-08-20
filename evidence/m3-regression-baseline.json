@@ -1,0 +1,73 @@
+{
+  "scenarios": {
+    "evening": {
+      "policies": {
+        "capr": {"avg_wait": 19.480741, "energy_proxy": 1981.848011, "guardrail_classification": "no_mean_improvement", "p95_wait": 49.54},
+        "collective": {"avg_wait": 18.311754, "energy_proxy": 1659.681429, "guardrail_classification": "reference", "p95_wait": 47.512917},
+        "legacy_sticky": {"avg_wait": 19.064853, "energy_proxy": 1515.120133, "guardrail_classification": "no_mean_improvement", "p95_wait": 49.801667},
+        "nearest_car": {"avg_wait": 20.13176, "energy_proxy": 1464.896524, "guardrail_classification": "no_mean_improvement", "p95_wait": 54.782917},
+        "queue_aware": {"avg_wait": 20.055041, "energy_proxy": 1964.875349, "guardrail_classification": "no_mean_improvement", "p95_wait": 53.349167}
+      },
+      "trace_digest_manifest_sha256": "c79be09b81ba9371e3bbbe7031659f844a4daaf04f40f422937be9f19d0d967a"
+    },
+    "lunch": {
+      "policies": {
+        "capr": {"avg_wait": 22.160129, "energy_proxy": 1660.354297, "guardrail_classification": "candidate_improvement", "p95_wait": 62.92375},
+        "collective": {"avg_wait": 24.148324, "energy_proxy": 1650.022964, "guardrail_classification": "reference", "p95_wait": 62.265},
+        "legacy_sticky": {"avg_wait": 30.144775, "energy_proxy": 1119.003568, "guardrail_classification": "no_mean_improvement", "p95_wait": 94.098333},
+        "nearest_car": {"avg_wait": 27.825027, "energy_proxy": 1132.422752, "guardrail_classification": "no_mean_improvement", "p95_wait": 85.79625},
+        "queue_aware": {"avg_wait": 23.01047, "energy_proxy": 1785.260618, "guardrail_classification": "candidate_improvement", "p95_wait": 57.427917}
+      },
+      "trace_digest_manifest_sha256": "0a18a5728fddf513dea731baa19d13aaaa6e9dae4eecff53d3e90695253bed79"
+    },
+    "mixed_day": {
+      "policies": {
+        "capr": {"avg_wait": 14.664854, "energy_proxy": 1733.708379, "guardrail_classification": "mean_improves_with_guardrail_tradeoff", "p95_wait": 34.847917},
+        "collective": {"avg_wait": 50.262874, "energy_proxy": 857.848289, "guardrail_classification": "reference", "p95_wait": 129.0475},
+        "legacy_sticky": {"avg_wait": 48.463891, "energy_proxy": 756.982897, "guardrail_classification": "candidate_improvement", "p95_wait": 117.507917},
+        "nearest_car": {"avg_wait": 45.047242, "energy_proxy": 773.530474, "guardrail_classification": "candidate_improvement", "p95_wait": 117.474167},
+        "queue_aware": {"avg_wait": 14.73971, "energy_proxy": 1702.146138, "guardrail_classification": "mean_improves_with_guardrail_tradeoff", "p95_wait": 39.149583}
+      },
+      "trace_digest_manifest_sha256": "6fb72b63951a2654734bd777b73d71029074a1ea3f8404b7b89f8467bf1d0ba8"
+    },
+    "morning": {
+      "policies": {
+        "capr": {"avg_wait": 16.050846, "energy_proxy": 810.971538, "guardrail_classification": "no_mean_improvement", "p95_wait": 29.680833},
+        "collective": {"avg_wait": 13.342781, "energy_proxy": 599.43879, "guardrail_classification": "reference", "p95_wait": 23.706667},
+        "legacy_sticky": {"avg_wait": 9.689395, "energy_proxy": 248.827898, "guardrail_classification": "candidate_improvement", "p95_wait": 18.668333},
+        "nearest_car": {"avg_wait": 8.276673, "energy_proxy": 245.714868, "guardrail_classification": "candidate_improvement", "p95_wait": 15.376667},
+        "queue_aware": {"avg_wait": 13.505307, "energy_proxy": 632.72055, "guardrail_classification": "no_mean_improvement", "p95_wait": 23.844167}
+      },
+      "trace_digest_manifest_sha256": "44a4f5c7d5b59e06111db2205af9fd84020291e33457b1a077ad36ab67a63f05"
+    },
+    "normal": {
+      "policies": {
+        "capr": {"avg_wait": 12.039064, "energy_proxy": 1122.360038, "guardrail_classification": "mean_improves_with_guardrail_tradeoff", "p95_wait": 26.810833},
+        "collective": {"avg_wait": 16.180879, "energy_proxy": 424.032829, "guardrail_classification": "reference", "p95_wait": 42.524583},
+        "legacy_sticky": {"avg_wait": 18.193903, "energy_proxy": 411.166985, "guardrail_classification": "no_mean_improvement", "p95_wait": 48.947083},
+        "nearest_car": {"avg_wait": 17.070011, "energy_proxy": 403.536317, "guardrail_classification": "no_mean_improvement", "p95_wait": 45.812917},
+        "queue_aware": {"avg_wait": 12.093302, "energy_proxy": 1093.469171, "guardrail_classification": "mean_improves_with_guardrail_tradeoff", "p95_wait": 27.76125}
+      },
+      "trace_digest_manifest_sha256": "d26344cc4e4a20b9e207fce2bb6cc738d7b5e0e33b39067d7b28a61e80f8eb45"
+    },
+    "shock": {
+      "policies": {
+        "capr": {"avg_wait": 21.75016, "energy_proxy": 1960.652644, "guardrail_classification": "no_mean_improvement", "p95_wait": 56.72},
+        "collective": {"avg_wait": 21.650816, "energy_proxy": 1702.693909, "guardrail_classification": "reference", "p95_wait": 60.934167},
+        "legacy_sticky": {"avg_wait": 21.960445, "energy_proxy": 1549.653727, "guardrail_classification": "no_mean_improvement", "p95_wait": 61.313333},
+        "nearest_car": {"avg_wait": 21.686577, "energy_proxy": 1489.052148, "guardrail_classification": "no_mean_improvement", "p95_wait": 60.465833},
+        "queue_aware": {"avg_wait": 21.533411, "energy_proxy": 1950.10077, "guardrail_classification": "mean_improves_with_guardrail_tradeoff", "p95_wait": 55.187917}
+      },
+      "trace_digest_manifest_sha256": "623ccc514295b10d7a171d9244c7c3f317553bae13ac92c866b62d9c08c9a479"
+    }
+  },
+  "schema": "elevator-queue-lab.m3-regression-baseline.v1",
+  "source": {
+    "artifact_sha256": "c96c0773160c9314a64aebd835de7741b8a28e11f527fed9193f4709b7fab536",
+    "head_sha": "6bf62f29e1c8d9628fc6fb0f92ec2a561570cde5",
+    "measurement_seconds": 180,
+    "seeds": 30,
+    "warmup_seconds": 0,
+    "workflow_run_id": 32352749591
+  }
+}

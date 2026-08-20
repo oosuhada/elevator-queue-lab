@@ -19,12 +19,11 @@ outcomes instead of visual car movement alone.
 > and tail waiting time in a zoned six-car office elevator group without creating unacceptable
 > energy use or floor-level unfairness?
 
-The working controller family is **CAPR — Capacity-Aware Predictive Reassignment**. CAPR is now an
-executable, explainable controller: it estimates route-insertion pickup ETA and residual capacity,
-continuously re-evaluates an assignment, invalidates a predicted-full car before the failed pickup,
-and uses hysteresis to prevent reassignment oscillation. It remains a **hypothesis to test, not a
-claim of novelty or superiority**. A learned controller will later challenge the hand-designed
-policies under the same deterministic passenger traces.
+The working controller family is **CAPR — Capacity-Aware Predictive Reassignment**. CAPR estimates
+route-insertion pickup ETA and residual capacity, continuously re-evaluates an assignment,
+invalidates a predicted-full car before the failed pickup, and uses hysteresis to prevent
+reassignment oscillation. It remains a **hypothesis to test, not a claim of novelty or universal
+superiority**.
 
 ## Current executable surface
 
@@ -36,17 +35,30 @@ policies under the same deterministic passenger traces.
 - assignment/reassignment decision ledger containing candidate scores and human-readable reasons;
 - regression coverage for the motivating **17F full car / 16F waiting passenger** case;
 - live digital-twin view of floors, cars, queues, load, assignments, wait metrics and CAPR decisions;
-- deterministic experiment runner using identical passenger traces across policies.
+- 30-seed common-random-number experiment engine with morning/lunch/normal/evening/shock/mixed-day;
+- P50/P95/P99 wait, journey time, throughput, unfinished queue, reassignment latency, floor fairness,
+  capacity misses and a transparent comparative energy proxy;
+- JSON + run-level CSV + summary CSV evidence artifacts, paired effect sizes and guardrail flags;
+- checked-in statistical regression baseline enforced by GitHub Actions.
 
-## Early result — deliberately not a victory claim
+## First 30-seed evidence: CAPR is regime-dependent
 
-A short 180-second, two-seed evening smoke experiment is a software regression check, not research
-evidence. In that small run, collective control still produced lower mean wait than CAPR. CAPR's
-first implementation also exposed a reassignment-thrashing defect; hysteresis reduced the observed
-smoke-run reassignment rate from **211.5 to 21.0 per run pair average** while preserving the
-pre-full-car invalidation regression. These negative/intermediate results stay visible on purpose.
-The M3 experiment engine will decide performance using 30+ common-random-number seeds, tail latency,
-fairness, capacity and energy guardrails rather than a favorable cherry-picked run.
+The first M3 matrix runs **30 seeds × 6 scenarios × 5 policies = 900 controller simulations** with
+the same passenger trace for every policy at a given seed. It deliberately does not produce a
+single global winner.
+
+- **Lunch:** CAPR is a clean candidate improvement: collective mean wait **24.15 s → 22.16 s** while
+  the configured tail/fairness/energy guardrails remain within tolerance.
+- **Normal:** CAPR improves mean wait **16.18 s → 12.04 s** and P95 **42.52 s → 26.81 s**, but the
+  energy proxy rises **424 → 1122**, so the result is classified as a tradeoff rather than a win.
+- **Mixed day:** CAPR strongly reduces wait (**50.26 s → 14.66 s**) but roughly doubles the energy
+  proxy (**858 → 1734**), again triggering the energy guardrail.
+- **Morning / evening / shock:** current CAPR does not beat collective on mean wait.
+- **Morning:** the simpler nearest-car baseline is the strongest unconditional candidate in this
+  short-window benchmark, useful evidence against forcing the project narrative toward CAPR.
+
+See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are reproducible
+simulation results, **not real-building performance claims**.
 
 ## Run locally
 
@@ -59,20 +71,27 @@ python -m app.server --port 4173
 Open `http://127.0.0.1:4173`. The live UI can switch traffic regime, policy, simulation speed, and
 conventional versus destination-control call input.
 
-Run validation:
+Run validation and evidence generation:
 
 ```bash
 python -m unittest discover -s tests -v
 python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3 --control-mode destination
+python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
+python scripts/check_regression_baseline.py evidence/m3-evidence.json
 ```
+
+The matrix command emits a self-describing JSON artifact plus `*.runs.csv` and `*.summary.csv`.
+Artifacts explicitly record a zero-second warm-up and the measurement window used by the run.
 
 ## Project status
 
-**M0 reproducibility, M1 simulator physics and M2 controller laboratory are implemented.** M3 is the
-next gate: a release-quality Monte Carlo/statistical evidence engine. `docs/ROADMAP.md` is the
-canonical work queue and `AGENTS.md` defines the continuation contract for future coding sessions.
+**M0 reproducibility, M1 simulator physics, M2 controller laboratory and M3 statistical evidence
+engine are implemented.** The next milestone is M4: turn the current live simulator into a
+release-quality digital twin with experiment comparison, heatmaps and deterministic replay.
+`docs/ROADMAP.md` is the canonical work queue and `AGENTS.md` defines the continuation contract for
+future coding sessions.
 
 ## Methodology references
 

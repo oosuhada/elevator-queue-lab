@@ -8,6 +8,9 @@ from typing import Iterable
 from .simulator import ElevatorSimulation
 
 
+EFFECT_SIZE_CAP = 20.0
+
+
 def percentile(values: Iterable[float], quantile: float) -> float:
     ordered = sorted(float(value) for value in values)
     if not ordered:
@@ -36,15 +39,17 @@ def paired_cohens_dz(differences: Iterable[float]) -> float:
     samples = [float(value) for value in differences]
     if len(samples) < 2:
         return 0.0
+    center = mean(samples)
     spread = stdev(samples)
     if spread == 0:
-        return 0.0 if mean(samples) == 0 else math.copysign(math.inf, mean(samples))
-    return mean(samples) / spread
+        if center == 0:
+            return 0.0
+        return math.copysign(EFFECT_SIZE_CAP, center)
+    return max(-EFFECT_SIZE_CAP, min(EFFECT_SIZE_CAP, center / spread))
 
 
 def analyze_simulation(simulation: ElevatorSimulation) -> dict[str, float | int | dict[str, float]]:
     arrivals: dict[int, tuple[float, int]] = {}
-    boarded_at: dict[int, float] = {}
     wait_by_floor: dict[int, list[float]] = defaultdict(list)
     waits: list[float] = []
     journeys: list[float] = []
@@ -59,7 +64,6 @@ def analyze_simulation(simulation: ElevatorSimulation) -> dict[str, float | int 
                 wait = event.sim_time - arrival[0]
                 waits.append(wait)
                 wait_by_floor[arrival[1]].append(wait)
-            boarded_at[passenger_id] = event.sim_time
         elif event.kind == "alight" and passenger_id is not None:
             arrival = arrivals.get(passenger_id)
             if arrival is not None:
@@ -82,9 +86,6 @@ def analyze_simulation(simulation: ElevatorSimulation) -> dict[str, float | int 
     )
     departures = event_counts.get("car_depart", 0)
     arrivals_count = event_counts.get("car_arrive", 0)
-    # Transparent unitless proxy: vertical travel dominates, while each motor start and
-    # door/service arrival receives a fixed penalty. This is for controller comparison only,
-    # not an electrical-energy estimate or manufacturer model.
     energy_proxy = distance_m + 8.0 * departures + 2.0 * arrivals_count
 
     elapsed_minutes = max(simulation.sim_time / 60.0, 1e-9)
@@ -156,10 +157,7 @@ def guardrail_classification(
     if candidate["avg_wait"] >= reference["avg_wait"]:
         return "no_mean_improvement"
     p95_regression = candidate["p95_wait"] > reference["p95_wait"] * 1.05
-    fairness_regression = (
-        candidate["worst_floor_mean_wait"]
-        > reference["worst_floor_mean_wait"] + 5.0
-    )
+    fairness_regression = candidate["worst_floor_mean_wait"] > reference["worst_floor_mean_wait"] + 5.0
     energy_regression = candidate["energy_proxy"] > reference["energy_proxy"] * 1.10
     if p95_regression or fairness_regression or energy_regression:
         return "mean_improves_with_guardrail_tradeoff"

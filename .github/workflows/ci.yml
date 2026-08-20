@@ -17,3 +17,17 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Deterministic experiment smoke test
         run: python scripts/run_experiment.py --scenario evening --seconds 180 --seeds 2 --output /tmp/elevator-smoke.json
+      - name: Destination-control experiment smoke test
+        run: python scripts/run_experiment.py --scenario evening --seconds 120 --seeds 3 --control-mode destination --output /tmp/elevator-destination-smoke.json
+      - name: M3 30-seed six-scenario evidence matrix
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        run: |
+          mkdir -p evidence
+          python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
+      - name: Upload M3 evidence artifacts
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/m3-statistical-evidence'
+        uses: actions/upload-artifact@v4
+        with:
+          name: m3-statistical-evidence
+          path: evidence/
+          retention-days: 14

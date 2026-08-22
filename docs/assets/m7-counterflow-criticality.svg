@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650">
+<rect width="1100" height="650" rx="20" fill="#08141e"/>
+<text x="92" y="38" fill="#eaf1f7" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Counterflow Criticality Hypothesis</text>
+<text x="92" y="59" fill="#718a9b" font-family="system-ui,sans-serif" font-size="12">CAPR continuous reassignment minus CAPR-static · 30 common seeds per cell · lower ΔAWT is better</text>
+<line x1="92.00" y1="70" x2="92.00" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="92.00" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">0</text>
+<line x1="220.80" y1="70" x2="220.80" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="220.80" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">4</text>
+<line x1="349.60" y1="70" x2="349.60" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="349.60" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">8</text>
+<line x1="478.40" y1="70" x2="478.40" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="478.40" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">12</text>
+<line x1="607.20" y1="70" x2="607.20" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="607.20" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">16</text>
+<line x1="736.00" y1="70" x2="736.00" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="736.00" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">20</text>
+<line x1="864.80" y1="70" x2="864.80" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="864.80" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">24</text>
+<line x1="993.60" y1="70" x2="993.60" y2="564" stroke="#294252" stroke-opacity=".35"/>
+<text x="993.60" y="595" text-anchor="middle" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">28</text>
+<line x1="92" y1="519.09" x2="1058" y2="519.09" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="523.09" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">-6s</text>
+<line x1="92" y1="429.27" x2="1058" y2="429.27" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="433.27" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">-4s</text>
+<line x1="92" y1="339.45" x2="1058" y2="339.45" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="343.45" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">-2s</text>
+<line x1="92" y1="249.64" x2="1058" y2="249.64" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="253.64" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">+0s</text>
+<line x1="92" y1="159.82" x2="1058" y2="159.82" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="163.82" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">+2s</text>
+<line x1="92" y1="70.00" x2="1058" y2="70.00" stroke="#294252" stroke-opacity=".35"/>
+<text x="80" y="74.00" text-anchor="end" fill="#718a9b" font-family="system-ui,sans-serif" font-size="11">+4s</text>
+<line x1="92" y1="249.64" x2="1058" y2="249.64" stroke="#dce8ee" stroke-opacity=".6" stroke-dasharray="6 5"/>
+<line x1="489.03" y1="70" x2="489.03" y2="564" stroke="#f1b86a" stroke-opacity=".8" stroke-dasharray="4 5"/>
+<text x="497.03" y="88" fill="#f1b86a" font-family="system-ui,sans-serif" font-size="11">high-effect trigger B≈12.33</text>
+<line x1="92.00" y1="220.13" x2="1058.00" y2="433.07" stroke="#4dd7d1" stroke-width="2.5" stroke-dasharray="9 6"/>
+<circle cx="110.74" cy="252.15" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.03, B=0.582, ΔAWT=-0.0559</title></circle>
+<circle cx="174.11" cy="265.14" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.15, B=2.55, ΔAWT=-0.345144</title></circle>
+<circle cx="227.24" cy="240.76" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.3, B=4.2, ΔAWT=0.197669</title></circle>
+<circle cx="251.39" cy="270.91" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.45, B=4.95, ΔAWT=-0.473655</title></circle>
+<circle cx="253.00" cy="259.95" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.5, B=5.0, ΔAWT=-0.229683</title></circle>
+<circle cx="227.24" cy="245.82" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.7, B=4.2, ΔAWT=0.085072</title></circle>
+<circle cx="174.11" cy="269.13" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.85, B=2.55, ΔAWT=-0.433992</title></circle>
+<circle cx="110.74" cy="250.94" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=5.0, p_up=0.97, B=0.582, ΔAWT=-0.0291</title></circle>
+<circle cx="129.48" cy="213.63" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.03, B=1.164, ΔAWT=0.801799</title></circle>
+<circle cx="256.22" cy="223.96" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.15, B=5.1, ΔAWT=0.571761</title></circle>
+<circle cx="362.48" cy="257.74" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.3, B=8.4, ΔAWT=-0.180543</title></circle>
+<circle cx="410.78" cy="263.82" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.45, B=9.9, ΔAWT=-0.31575</title></circle>
+<circle cx="414.00" cy="292.79" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.5, B=10.0, ΔAWT=-0.960826</title></circle>
+<circle cx="362.48" cy="285.27" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.7, B=8.4, ΔAWT=-0.793459</title></circle>
+<circle cx="256.22" cy="242.74" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.85, B=5.1, ΔAWT=0.153543</title></circle>
+<circle cx="129.48" cy="196.85" r="5" fill="#ff8a8a" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=10.0, p_up=0.97, B=1.164, ΔAWT=1.175515</title></circle>
+<circle cx="151.97" cy="219.42" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.03, B=1.8624, ΔAWT=0.672754</title></circle>
+<circle cx="354.75" cy="341.69" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.15, B=8.16, ΔAWT=-2.049667</title></circle>
+<circle cx="524.77" cy="303.27" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.3, B=13.44, ΔAWT=-1.194337</title></circle>
+<circle cx="602.05" cy="302.30" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.45, B=15.84, ΔAWT=-1.172702</title></circle>
+<circle cx="607.20" cy="351.50" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.5, B=16.0, ΔAWT=-2.268269</title></circle>
+<circle cx="524.77" cy="377.86" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.7, B=13.44, ΔAWT=-2.855293</title></circle>
+<circle cx="354.75" cy="343.43" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.85, B=8.16, ΔAWT=-2.088488</title></circle>
+<circle cx="151.97" cy="197.35" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=16.0, p_up=0.97, B=1.8624, ΔAWT=1.164291</title></circle>
+<circle cx="174.46" cy="256.67" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.03, B=2.5608, ΔAWT=-0.15669</title></circle>
+<circle cx="453.28" cy="283.16" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.15, B=11.22, ΔAWT=-0.746444</title></circle>
+<circle cx="687.06" cy="333.49" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.3, B=18.48, ΔAWT=-1.867292</title></circle>
+<circle cx="793.32" cy="394.33" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.45, B=21.78, ΔAWT=-3.221992</title></circle>
+<circle cx="800.40" cy="413.41" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.5, B=22.0, ΔAWT=-3.646844</title></circle>
+<circle cx="687.06" cy="359.61" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.7, B=18.48, ΔAWT=-2.448822</title></circle>
+<circle cx="453.28" cy="317.09" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.85, B=11.22, ΔAWT=-1.501945</title></circle>
+<circle cx="174.46" cy="113.37" r="5" fill="#ff8a8a" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=22.0, p_up=0.97, B=2.5608, ΔAWT=3.034208</title></circle>
+<circle cx="196.95" cy="269.97" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.03, B=3.2592, ΔAWT=-0.452827</title></circle>
+<circle cx="551.82" cy="330.07" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.15, B=14.28, ΔAWT=-1.791113</title></circle>
+<circle cx="849.34" cy="386.95" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.3, B=23.52, ΔAWT=-3.057592</title></circle>
+<circle cx="984.58" cy="334.30" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.45, B=27.72, ΔAWT=-1.885291</title></circle>
+<circle cx="993.60" cy="371.27" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.5, B=28.0, ΔAWT=-2.708378</title></circle>
+<circle cx="849.34" cy="354.99" r="5" fill="#6ca9ff" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.7, B=23.52, ΔAWT=-2.345946</title></circle>
+<circle cx="551.82" cy="512.62" r="5" fill="#79dfb0" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.85, B=14.28, ΔAWT=-5.855998</title></circle>
+<circle cx="196.95" cy="135.80" r="5" fill="#ff8a8a" fill-opacity=".8" stroke="#071019" stroke-width="1.4"><title>Discovery λ=28.0, p_up=0.97, B=3.2592, ΔAWT=2.534742</title></circle>
+<rect x="237.70" y="251.22" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 242.70 256.22)"/>
+<rect x="400.95" y="264.70" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 405.95 269.70)"/>
+<rect x="488.86" y="284.42" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 493.86 289.42)"/>
+<rect x="488.86" y="305.48" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 493.86 310.48)"/>
+<rect x="400.95" y="263.89" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 405.95 268.89)"/>
+<rect x="237.70" y="213.02" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 242.70 218.02)"/>
+<rect x="307.25" y="244.85" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 312.25 249.85)"/>
+<rect x="545.85" y="252.31" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 550.85 257.31)"/>
+<rect x="674.33" y="316.85" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 679.33 321.85)"/>
+<rect x="674.33" y="413.74" width="10" height="10" fill="#79dfb0" fill-opacity=".25" stroke="#79dfb0" stroke-width="1.6" transform="rotate(45 679.33 418.74)"/>
+<rect x="545.85" y="329.45" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 550.85 334.45)"/>
+<rect x="307.25" y="340.68" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 312.25 345.68)"/>
+<rect x="376.80" y="248.90" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 381.80 253.90)"/>
+<rect x="690.75" y="339.30" width="10" height="10" fill="#79dfb0" fill-opacity=".25" stroke="#79dfb0" stroke-width="1.6" transform="rotate(45 695.75 344.30)"/>
+<rect x="859.80" y="333.40" width="10" height="10" fill="#79dfb0" fill-opacity=".25" stroke="#79dfb0" stroke-width="1.6" transform="rotate(45 864.80 338.40)"/>
+<rect x="859.80" y="362.27" width="10" height="10" fill="#79dfb0" fill-opacity=".25" stroke="#79dfb0" stroke-width="1.6" transform="rotate(45 864.80 367.27)"/>
+<rect x="690.75" y="499.74" width="10" height="10" fill="#79dfb0" fill-opacity=".25" stroke="#79dfb0" stroke-width="1.6" transform="rotate(45 695.75 504.74)"/>
+<rect x="376.80" y="263.11" width="10" height="10" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2" stroke-width="1.6" transform="rotate(45 381.80 268.11)"/>
+<text x="1058" y="630" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Bidirectional load B = λ · 4p↑(1−p↑) [passengers/min] →</text>
+<text x="23" y="70" transform="rotate(-90 23 70)" text-anchor="end" fill="#8299a8" font-family="system-ui,sans-serif" font-size="12">Δ average wait [s] · CAPR − static</text>
+<circle cx="92" cy="622" r="5" fill="#6ca9ff"/><text x="105" y="626" fill="#8299a8" font-family="system-ui,sans-serif" font-size="11">discovery</text>
+<rect x="180" y="617" width="10" height="10" transform="rotate(45 185 622)" fill="#9db4c2" fill-opacity=".25" stroke="#9db4c2"/><text x="199" y="626" fill="#8299a8" font-family="system-ui,sans-serif" font-size="11">held-out validation</text>
+<circle cx="330" cy="622" r="5" fill="#79dfb0"/><text x="343" y="626" fill="#8299a8" font-family="system-ui,sans-serif" font-size="11">95% CI-supported gain</text>
+</svg>

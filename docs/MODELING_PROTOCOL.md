@@ -88,3 +88,21 @@ The learning milestone then exposes the simulator as an MDP with bounded actions
 Dueling Double DQN-style controller, inspired by recent EGCS research. A learned result is accepted
 only if it generalizes to held-out seeds and at least one held-out traffic mixture.
 
+## 8. M7 controlled theory-extraction protocol
+
+Scenario names are useful operational labels but cannot by themselves support a general dispatch
+rule. M7 therefore adds a separate parametric traffic surface used only for theory extraction. It
+holds the 85/10/5 trip-purpose mix fixed while independently varying total arrival intensity `λ`
+and lobby up probability `p`.
+
+The principal state-variable hypothesis is the normalized bidirectional-load index
+`B = λ · 4p(1-p)`. The symmetric mixing term is zero for one-way flow and one for a 50/50 lobby
+stream. Because lobby share is held fixed at 85%, M7 does not claim that this absolute normalization
+will transfer unchanged when trip-purpose shares change.
+
+Continuous reassignment is isolated with a `capr_static` ablation: CAPR-static inherits CAPR's
+initial scoring and parking behavior but does not periodically reconsider an already-owned call.
+Discovery uses 30 common seeds over a predeclared 40-cell λ/p grid. A separate 18-cell grid with
+unseen λ and p values is reserved for frozen-threshold validation. The M7 threshold is therefore
+reported with out-of-grid performance rather than only in-sample fit.
+

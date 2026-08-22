@@ -25,6 +25,7 @@ let displayMode = "live";
 let savedReplay = null;
 let latestLiveSnapshot = null;
 let experimentPayload = null;
+let theoryPayload = null;
 
 const EVIDENCE_POLICIES = ["legacy_sticky", "nearest_car", "collective", "queue_aware", "capr"];
 const POLICY_LABELS = {
@@ -615,6 +616,152 @@ async function loadEvidence() {
   populateEvidence();
 }
 
+function theoryPhaseLabel(bidirectionalLoad) {
+  if (bidirectionalLoad < 4) return "static / churn";
+  if (bidirectionalLoad < 12) return "transition";
+  return "predictive value";
+}
+
+function renderTheory() {
+  const discovery = theoryPayload?.discovery;
+  const validation = theoryPayload?.validation;
+  if (!discovery?.theory || !validation?.result) return;
+  const theory = discovery.theory;
+  const result = validation.result;
+  const threshold = Number(theory.best_single_threshold?.threshold || 0);
+  const linear = theory.linear_wait_delta_fit || {};
+  const heldoutLinear = result.frozen_linear_effect_model || {};
+  const gated = result.gated_policy_projection || {};
+
+  const leaders = document.querySelector("#theory-leaders");
+  leaders.innerHTML = `
+    <article class="theory-leader primary">
+      <span>Discovery relationship</span>
+      <strong>r = ${Number(theory.pearson_bidirectional_load_rate_vs_capr_wait_delta).toFixed(2)}</strong>
+      <small>higher B tracks lower CAPR − static average wait</small>
+    </article>
+    <article class="theory-leader">
+      <span>High-effect trigger</span>
+      <strong>B ≈ ${threshold.toFixed(2)}</strong>
+      <small>${Number(theory.best_single_threshold.accuracy * 100).toFixed(1)}% discovery classification</small>
+    </article>
+    <article class="theory-leader">
+      <span>Held-out falsification</span>
+      <strong>${Number(result.accuracy * 100).toFixed(1)}%</strong>
+      <small>${result.correct_cells}/${result.total_cells} unseen cells · recall ${Number(result.recall * 100).toFixed(0)}%</small>
+    </article>
+    <article class="theory-leader">
+      <span>B-gated control projection</span>
+      <strong>${Number((gated.wait_gain_retained_vs_always_on_capr || 0) * 100).toFixed(0)}% wait gain</strong>
+      <small>${Number((gated.energy_overhead_reduction_vs_always_on_capr || 0) * 100).toFixed(0)}% less added energy · active ${gated.active_cells || 0}/${gated.total_cells || 0}</small>
+    </article>`;
+
+  renderTheoryScatter(discovery, validation);
+  renderTheoryPhases(theory);
+  renderCanonicalTheory(threshold);
+
+  const rule = document.querySelector("#theory-rule");
+  rule.innerHTML = `<span>Empirical effect law</span><strong>ΔAWT ≈ ${Number(linear.intercept_seconds).toFixed(3)} ${Number(linear.slope_seconds_per_bidirectional_pax_per_min) < 0 ? "−" : "+"} ${Math.abs(Number(linear.slope_seconds_per_bidirectional_pax_per_min)).toFixed(3)} · B</strong><small>CAPR minus CAPR-static · seconds · discovery R² ${Number(linear.r_squared).toFixed(2)}</small>`;
+
+  const caveat = document.querySelector("#theory-caveat");
+  caveat.innerHTML = `<b>What survived falsification:</b> B is useful as a continuous effect predictor (held-out r=${Number(heldoutLinear.correlation_observed_vs_predicted || 0).toFixed(2)}, MAE ${Number(heldoutLinear.mae_seconds || 0).toFixed(2)}s) and a high-recall screening variable, but B≈${threshold.toFixed(2)} is not a hard universal critical constant. The held-out grid produced ${result.confusion?.false_positive ?? 0} threshold false positives and ${result.confusion?.false_negative ?? 0} false negatives; ${result.all_threshold_positive_cells_have_negative_mean_delta ? "every threshold-positive held-out cell still moved mean AWT in the beneficial direction, but several confidence intervals crossed zero." : "some threshold-positive cells did not even improve the mean."} Treat this as a fuzzy phase transition to test on other buildings, capacities and traffic mixes.`;
+}
+
+function renderTheoryScatter(discovery, validation) {
+  const svg = document.querySelector("#theory-scatter");
+  const discoveryCells = discovery.cells || [];
+  const validationCells = validation.cells || [];
+  const allCells = [...discoveryCells, ...validationCells];
+  if (!allCells.length) return;
+  const points = allCells.map((cell) => ({
+    x: Number(cell.demand.bidirectional_load_rate),
+    y: Number(cell.capr_vs_static.metrics.avg_wait.delta_mean),
+  }));
+  const width = 820;
+  const height = 340;
+  const left = 58;
+  const right = 22;
+  const top = 18;
+  const bottom = 48;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const xMax = Math.max(30, ...points.map((point) => point.x)) * 1.03;
+  const observedMin = Math.min(...points.map((point) => point.y));
+  const observedMax = Math.max(...points.map((point) => point.y));
+  const yMin = Math.min(-7, observedMin - 0.5);
+  const yMax = Math.max(4, observedMax + 0.5);
+  const xScale = (x) => left + (x / xMax) * plotWidth;
+  const yScale = (y) => top + ((yMax - y) / (yMax - yMin)) * plotHeight;
+  const xTicks = [0, 4, 8, 12, 16, 20, 24, 28].filter((value) => value <= xMax);
+  const yTicks = [-6, -4, -2, 0, 2, 4].filter((value) => value >= yMin && value <= yMax);
+  const grid = [
+    ...xTicks.map((tick) => `<g class="theory-gridline"><line x1="${xScale(tick)}" y1="${top}" x2="${xScale(tick)}" y2="${height - bottom}"/><text x="${xScale(tick)}" y="${height - 20}" text-anchor="middle">${tick}</text></g>`),
+    ...yTicks.map((tick) => `<g class="theory-gridline"><line x1="${left}" y1="${yScale(tick)}" x2="${width - right}" y2="${yScale(tick)}"/><text x="${left - 9}" y="${yScale(tick) + 3}" text-anchor="end">${tick > 0 ? "+" : ""}${tick}s</text></g>`),
+  ].join("");
+
+  const threshold = Number(discovery.theory.best_single_threshold.threshold);
+  const fit = discovery.theory.linear_wait_delta_fit;
+  const fitY = (x) => Number(fit.intercept_seconds) + Number(fit.slope_seconds_per_bidirectional_pax_per_min) * x;
+  const regression = `<line class="theory-fit" x1="${xScale(0)}" y1="${yScale(fitY(0))}" x2="${xScale(xMax)}" y2="${yScale(fitY(xMax))}"/>`;
+  const zero = `<line class="theory-zero" x1="${left}" y1="${yScale(0)}" x2="${width - right}" y2="${yScale(0)}"/>`;
+  const thresholdLine = `<g class="theory-threshold"><line x1="${xScale(threshold)}" y1="${top}" x2="${xScale(threshold)}" y2="${height - bottom}"/><text x="${xScale(threshold) + 6}" y="${top + 13}">high-effect trigger ≈ ${threshold.toFixed(2)}</text></g>`;
+
+  const discoveryMarks = discoveryCells.map((cell) => {
+    const x = xScale(Number(cell.demand.bidirectional_load_rate));
+    const y = yScale(Number(cell.capr_vs_static.metrics.avg_wait.delta_mean));
+    const supported = Boolean(cell.capr_vs_static.supported_wait_gain);
+    const loss = Boolean(cell.capr_vs_static.supported_wait_loss);
+    const state = supported ? "gain" : loss ? "loss" : "uncertain";
+    return `<circle class="theory-point discovery ${state}" data-kind="discovery" cx="${x}" cy="${y}" r="4.1"><title>discovery · λ ${cell.demand.arrivals_per_minute}/min · p↑ ${cell.demand.lobby_up_probability} · B ${cell.demand.bidirectional_load_rate} · ΔAWT ${Number(cell.capr_vs_static.metrics.avg_wait.delta_mean).toFixed(2)}s</title></circle>`;
+  }).join("");
+  const validationMarks = validationCells.map((cell) => {
+    const x = xScale(Number(cell.demand.bidirectional_load_rate));
+    const y = yScale(Number(cell.capr_vs_static.metrics.avg_wait.delta_mean));
+    const supported = Boolean(cell.capr_vs_static.supported_wait_gain);
+    const size = 4.8;
+    return `<rect class="theory-point validation ${supported ? "gain" : "uncertain"}" data-kind="validation" x="${x - size}" y="${y - size}" width="${size * 2}" height="${size * 2}" transform="rotate(45 ${x} ${y})"><title>held-out · λ ${cell.demand.arrivals_per_minute}/min · p↑ ${cell.demand.lobby_up_probability} · B ${cell.demand.bidirectional_load_rate} · ΔAWT ${Number(cell.capr_vs_static.metrics.avg_wait.delta_mean).toFixed(2)}s</title></rect>`;
+  }).join("");
+  svg.innerHTML = `${grid}${zero}${regression}${thresholdLine}${discoveryMarks}${validationMarks}<text class="theory-axis-label" x="${width - right}" y="${height - 3}" text-anchor="end">Bidirectional load B (passengers/min) →</text><text class="theory-axis-label" transform="translate(13 ${top}) rotate(-90)" text-anchor="end">Δ average wait · lower is better</text>`;
+}
+
+function renderTheoryPhases(theory) {
+  const target = document.querySelector("#theory-phase-bins");
+  target.innerHTML = (theory.phase_bins || []).map((bin) => {
+    const upper = bin.upper == null ? "∞" : Number(bin.upper).toFixed(0);
+    const delta = Number(bin.mean_avg_wait_delta_seconds);
+    const clean = Number(bin.clean_gain_cells || 0);
+    const state = Number(bin.lower) < 4 ? "static" : Number(bin.lower) < 12 ? "transition" : "predictive";
+    return `<article class="phase-bin ${state}"><div><span>B ${Number(bin.lower).toFixed(0)}–${upper}</span><b>${state}</b></div><strong>${signedSeconds(delta)}</strong><small>mean ΔAWT · ${clean}/${bin.cells} clean-gain cells · E×${Number(bin.mean_energy_ratio).toFixed(2)}</small></article>`;
+  }).join("");
+}
+
+function renderCanonicalTheory(threshold) {
+  const scenarios = [
+    { name: "Morning", lambda: 22, p: 0.97 },
+    { name: "Lunch", lambda: 16, p: 0.45 },
+    { name: "Normal", lambda: 5, p: 0.35 },
+    { name: "Evening", lambda: 22, p: 0.03 },
+  ];
+  const target = document.querySelector("#canonical-theory-row");
+  target.innerHTML = scenarios.map((scenario) => {
+    const b = scenario.lambda * 4 * scenario.p * (1 - scenario.p);
+    const phase = theoryPhaseLabel(b);
+    const relation = b >= threshold ? "above trigger" : "below trigger";
+    return `<article><span>${scenario.name}</span><strong>B ${b.toFixed(2)}</strong><small>${phase} · ${relation}</small></article>`;
+  }).join("");
+}
+
+async function loadTheory() {
+  try {
+    const response = await fetch("/api/theory", { cache: "no-store" });
+    if (!response.ok) return;
+    theoryPayload = await response.json();
+    renderTheory();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 async function refresh() {
   if (displayMode !== "live") return;
   try {
@@ -651,4 +798,5 @@ window.addEventListener("resize", () => {
 buildBuilding();
 refresh();
 loadEvidence();
+loadTheory();
 setInterval(refresh, 300);

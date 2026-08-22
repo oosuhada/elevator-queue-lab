@@ -119,3 +119,14 @@ demo without private infrastructure.
 - [x] rank dispatch policies per scenario using the existing guardrail classification before raw speed;
 - [x] expose AWT 95% CI, P95/P99, worst-floor wait, energy and paired delta versus collective in one decision table;
 - [x] regression-test leaderboard behavior, density rendering and mobile layout with Playwright.
+
+## M7 — counterflow criticality theory extraction
+
+- [x] isolate continuous predictive reassignment with a CAPR-static ablation;
+- [x] introduce a controlled λ × directional-mixing office-demand surface;
+- [x] run a 40-cell × 30-seed discovery sweep and extract the bidirectional-load hypothesis;
+- [x] freeze the discovery threshold and challenge it on 18 unseen λ/p cells × 30 seeds;
+- [x] preserve the negative result that the threshold is fuzzy rather than a universal critical constant;
+- [x] generate a paper-style M7 report and evidence figure from committed artifacts;
+- [x] expose discovery + held-out theory evidence in the live dashboard through `/api/theory`;
+- [ ] deploy the M7 theory dashboard and re-verify the public demo.

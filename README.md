@@ -23,6 +23,13 @@ The screenshot above is captured from the deployed public simulator at `elevator
 Chromium verifies the live UI/API contract: all six cars, all 18 floors, the evidence cards, the
 learned-policy control path and simulator audit. It is not a mockup or static chart fixture.
 
+> **Research takeaway — congestion alone is not the trigger.** Continuous predictive reassignment
+> becomes valuable when **heavy traffic and enough counterflow rise together**, because opposing
+> directional demand makes stale assignments increasingly costly to keep. In practical terms:
+> **do not reassign just because the system is busy; reassign when directional competition is high
+> enough to justify the churn.** The M7 controlled sweep and held-out falsification below quantify
+> this as the Counterflow Criticality Hypothesis.
+
 ## Research question
 
 > Can continuous capacity-aware reassignment and demand-aware pre-positioning reduce both average
@@ -84,6 +91,12 @@ See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are
 simulation results, **not real-building performance claims**.
 
 ## M7 theory candidate: counterflow criticality
+
+**Key takeaway:** “reassign under congestion” is too crude. The evidence instead supports a
+**congestion × counterflow** rule: stale-assignment correction becomes materially more valuable only
+when traffic intensity and opposing directional flow are both high enough. That distinction explains
+why the project sees a low-churn morning regime (`B = 2.56`) but a predictive-reassignment lunch
+regime (`B = 15.84`) even though both can be busy office periods.
 
 The scenario-level result suggested a deeper question: why is predictive reassignment useful in
 lunch-like traffic but wasteful in strongly one-way peaks? M7 isolates that mechanism with

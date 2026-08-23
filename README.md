@@ -230,6 +230,13 @@ claim formal standards compliance. See `docs/MODELING_PROTOCOL.md` for scope and
 
 MIT, unless a later dependency or imported dataset requires a narrower notice.
 
-## Topics
+## Architecture & Topics / 아키텍처 및 주제
 
-[`digital-twin`](https://github.com/topics/digital-twin) · [`elevator-control`](https://github.com/topics/elevator-control) · [`optimization`](https://github.com/topics/optimization) · [`python`](https://github.com/topics/python) · [`queueing-theory`](https://github.com/topics/queueing-theory) · [`reinforcement-learning`](https://github.com/topics/reinforcement-learning) · [`research-tool`](https://github.com/topics/research-tool) · [`simulation`](https://github.com/topics/simulation) · [`elevator`](https://github.com/topics/elevator) · [`discrete-event-simulation`](https://github.com/topics/discrete-event-simulation) · [`traffic-simulation`](https://github.com/topics/traffic-simulation) · [`dispatch-algorithm`](https://github.com/topics/dispatch-algorithm) · [`machine-learning`](https://github.com/topics/machine-learning) · [`control-systems`](https://github.com/topics/control-systems) · [`operations-research`](https://github.com/topics/operations-research) · [`gymnasium`](https://github.com/topics/gymnasium)
+**Architecture / 아키텍처**<br>
+[`discrete-event-simulation`](https://github.com/topics/discrete-event-simulation) · [`digital-twin`](https://github.com/topics/digital-twin) · [`queueing-model`](https://github.com/topics/queueing-model) · [`policy-based-design`](https://github.com/topics/policy-based-design) · [`strategy-pattern`](https://github.com/topics/strategy-pattern) · [`simulation-driven-design`](https://github.com/topics/simulation-driven-design) · [`event-scheduling`](https://github.com/topics/event-scheduling) · [`closed-loop-control`](https://github.com/topics/closed-loop-control)
+
+**Project context / 프로젝트 맥락**<br>
+[`control-systems`](https://github.com/topics/control-systems) · [`dispatch-algorithm`](https://github.com/topics/dispatch-algorithm) · [`elevator`](https://github.com/topics/elevator) · [`elevator-control`](https://github.com/topics/elevator-control) · [`gymnasium`](https://github.com/topics/gymnasium) · [`machine-learning`](https://github.com/topics/machine-learning) · [`operations-research`](https://github.com/topics/operations-research) · [`optimization`](https://github.com/topics/optimization) · [`queueing-theory`](https://github.com/topics/queueing-theory) · [`reinforcement-learning`](https://github.com/topics/reinforcement-learning) · [`research-tool`](https://github.com/topics/research-tool) · [`simulation`](https://github.com/topics/simulation) · [`traffic-simulation`](https://github.com/topics/traffic-simulation)
+
+**Implementation stack / 구현 스택**<br>
+[`python`](https://github.com/topics/python)

@@ -2,12 +2,50 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
 PORT="${PORT:-4174}"
 LABEL="dev.oosu.elevator-queue-lab"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/elevator-queue-lab"
 DOMAIN="${LAUNCHD_DOMAIN:-gui/$(id -u)}"
+
+python_is_supported() {
+  local candidate="$1"
+  [ -x "$candidate" ] || return 1
+  "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+}
+
+select_python() {
+  local candidate
+  local path_python=""
+
+  if [ -n "${PYTHON_BIN:-}" ]; then
+    if python_is_supported "$PYTHON_BIN"; then
+      printf '%s\n' "$PYTHON_BIN"
+      return 0
+    fi
+    echo "PYTHON_BIN must point to Python 3.11 or newer: $PYTHON_BIN" >&2
+    return 1
+  fi
+
+  path_python="$(command -v python3 2>/dev/null || true)"
+  for candidate in /opt/homebrew/bin/python3 /usr/local/bin/python3 "$path_python"; do
+    [ -n "$candidate" ] || continue
+    if python_is_supported "$candidate"; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  echo "Elevator Queue Lab requires Python 3.11 or newer." >&2
+  echo "Install a supported Python or set PYTHON_BIN explicitly." >&2
+  return 1
+}
+
+PYTHON_BIN="$(select_python)"
 
 mkdir -p "$(dirname "$PLIST")" "$LOG_DIR"
 

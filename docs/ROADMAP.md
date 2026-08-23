@@ -131,3 +131,24 @@ demo without private infrastructure.
 - [x] expose discovery + held-out theory evidence in the live dashboard through `/api/theory`;
 - [x] deploy the M7 theory dashboard and re-verify the public demo;
 - [x] elevate the counterflow-criticality operating rule into a first-read key takeaway in the public dashboard and README.
+
+## M8 — Decision Intelligence Product Workbench
+
+- [x] migrate the authored frontend from the M4 vanilla-JS monolith to React + TypeScript while keeping `web/` as the committed production artifact;
+- [x] add an operations/research Product Shell with Live Operations, Runs, Dispatch Analysis, Experiments, Theory, Models and Explorer workbenches;
+- [x] preserve the 18-floor / six-car live digital twin, control surface, decision inspector and deterministic replay flow;
+- [x] add versioned run, passenger-trace, dispatch-decision, experiment, policy-evaluation, model and theory-evidence artifact projections with provenance;
+- [x] add browseable research objects and a read-only Decision Trace graph projected from simulator state, decision history and the event ledger;
+- [x] introduce a typed semantic `ChartSpec` contract with runtime validation and registered React renderers rather than arbitrary generated HTML/JS;
+- [x] expose committed M3/M5/M7 evidence through dedicated Experiment, Model and Counterflow Criticality workbenches without fabricating metrics;
+- [x] add deterministic Ask This Run explanations backed only by recorded run evidence and committed comparisons;
+- [x] generalize CI so Python contracts, frontend type/unit/build gates and Playwright E2E/visual QA run on every pull request;
+- [x] keep the expensive 30-seed statistical regression on `main`, schedule, or an explicit PR label instead of every PR;
+- [x] add deterministic visual-regression baselines for Live Operations desktop/mobile, Replay, Experiments, Theory, Models and Explorer/Decision Trace;
+- [x] add `npm run capture:showcase` to capture portfolio assets from the real Python server and production frontend;
+- [x] document the frontend/simulator boundary, artifact contracts, graph projection, evidence flow, CI strategy, deployment compatibility and reference-license policy.
+
+**Gate:** A reviewer can inspect a live dispatch decision from passenger → call → candidate evaluation
+→ assignment/reassignment → pickup → resulting metric, reproduce the run from its artifact
+provenance, compare policies statistically, and verify the same state through automated browser/API
+tests.

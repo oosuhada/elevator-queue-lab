@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elevator.oosu.dev/contracts/passenger-trace.schema.json",
+  "title": "PassengerTraceArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "scenario", "seed", "duration_seconds", "events"],
+  "properties": {
+    "schema": { "const": "elevator-queue-lab.passenger-trace.v1" },
+    "scenario": { "type": "string", "minLength": 1 },
+    "seed": { "type": "integer" },
+    "duration_seconds": { "type": "integer", "minimum": 1 },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "passenger_id", "origin", "destination"],
+        "properties": {
+          "at": { "type": "integer", "minimum": 1 },
+          "passenger_id": { "type": "integer", "minimum": 1 },
+          "origin": { "type": "integer", "minimum": 1, "maximum": 18 },
+          "destination": { "type": "integer", "minimum": 1, "maximum": 18 }
+        }
+      }
+    }
+  }
+}

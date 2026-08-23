@@ -14,13 +14,35 @@ const POLICY_LABELS: Record<string, string> = {
   capr: "CAPR",
 };
 
-function classificationRank(classification: string): number {
+type EvidenceVerdict = "clean-win" | "trade-off" | "regression" | "insufficient" | "falsification" | "reference";
+
+const VERDICT_COPY: Record<EvidenceVerdict, { symbol: string; label: string; detail: string }> = {
+  "clean-win": { symbol: "◆", label: "clean win", detail: "Mean wait improves and configured guardrails stay within tolerance." },
+  "trade-off": { symbol: "△", label: "trade-off", detail: "Mean wait improves, but at least one service/fairness/energy guardrail trades off." },
+  regression: { symbol: "×", label: "regression", detail: "Mean wait does not improve versus the collective reference." },
+  insufficient: { symbol: "○", label: "insufficient evidence", detail: "The paired mean delta is not larger than its committed 95% CI half-width." },
+  falsification: { symbol: "⊘", label: "falsification", detail: "The candidate hypothesis fails to improve mean wait in this traffic regime." },
+  reference: { symbol: "│", label: "reference", detail: "Collective is the comparison reference, not a declared winner." },
+};
+
+function evidenceVerdict(policy: string, evidence: PolicyEvidence): EvidenceVerdict {
+  if (evidence.guardrail_classification === "reference") return "reference";
+  if (Math.abs(evidence.avg_wait_delta_vs_collective) <= evidence.avg_wait_delta_ci95_halfwidth) return "insufficient";
+  if (evidence.guardrail_classification === "candidate_improvement") return "clean-win";
+  if (evidence.guardrail_classification === "mean_improves_with_guardrail_tradeoff") return "trade-off";
+  if (policy === "capr" && evidence.guardrail_classification === "no_mean_improvement") return "falsification";
+  return "regression";
+}
+
+function verdictRank(policy: string, evidence: PolicyEvidence): number {
   return {
-    candidate_improvement: 0,
+    "clean-win": 0,
     reference: 1,
-    mean_improves_with_guardrail_tradeoff: 2,
-    no_mean_improvement: 3,
-  }[classification] ?? 4;
+    "trade-off": 2,
+    insufficient: 3,
+    regression: 4,
+    falsification: 5,
+  }[evidenceVerdict(policy, evidence)];
 }
 
 function fmt(value: number, digits = 2): string {
@@ -32,7 +54,7 @@ export function ExperimentsWorkbench({ payload }: { payload: ExperimentPayload }
   const [metric, setMetric] = useState("avg_wait");
   const policies = payload.baseline.scenarios[scenario]?.policies ?? {};
   const ranked = useMemo(() => POLICY_ORDER.filter((policy) => policies[policy]).map((policy) => ({ policy, evidence: policies[policy] })).sort((a, b) => {
-    const guardrail = classificationRank(a.evidence.guardrail_classification) - classificationRank(b.evidence.guardrail_classification);
+    const guardrail = verdictRank(a.policy, a.evidence) - verdictRank(b.policy, b.evidence);
     return guardrail || a.evidence.avg_wait - b.evidence.avg_wait;
   }), [policies]);
   const selectedPolicy = ranked[0]?.policy ?? "collective";
@@ -86,10 +108,16 @@ export function ExperimentsWorkbench({ payload }: { payload: ExperimentPayload }
       <section id="policy-leaders" className="policy-leaders" aria-label="Evidence leaders">
         {ranked.slice(0, 3).map(({ policy, evidence }, index) => (
           <article key={policy} className={`policy-leader ${index === 0 ? "primary" : ""}`} data-policy={policy}>
-            <span>{index === 0 ? "Evidence leader" : `Rank ${index + 1}`}</span>
+            <span>{index === 0 ? "Scenario evidence order" : `Rank ${index + 1}`}</span>
             <strong>{POLICY_LABELS[policy]}</strong>
-            <small>{evidence.avg_wait.toFixed(2)}s AWT · {evidence.guardrail_classification.replaceAll("_", " ")}</small>
+            <small>{evidence.avg_wait.toFixed(2)}s AWT · {VERDICT_COPY[evidenceVerdict(policy, evidence)].label}</small>
           </article>
+        ))}
+      </section>
+
+      <section className="verdict-legend" aria-label="Experiment verdict legend">
+        {(Object.entries(VERDICT_COPY) as Array<[EvidenceVerdict, (typeof VERDICT_COPY)[EvidenceVerdict]]>).filter(([key]) => key !== "reference").map(([key, copy]) => (
+          <div key={key} className={`verdict-key verdict-${key}`}><b aria-hidden="true">{copy.symbol}</b><span><strong>{copy.label}</strong><small>{copy.detail}</small></span></div>
         ))}
       </section>
 
@@ -97,14 +125,16 @@ export function ExperimentsWorkbench({ payload }: { payload: ExperimentPayload }
         {POLICY_ORDER.filter((policy) => policies[policy]).map((policy) => {
           const evidence = policies[policy];
           const delta = collective ? evidence.avg_wait - collective.avg_wait : 0;
+          const verdict = evidenceVerdict(policy, evidence);
+          const verdictCopy = VERDICT_COPY[verdict];
           return (
-            <article key={policy} className="comparison-card" data-policy={policy}>
-              <span>{POLICY_LABELS[policy]}</span>
+            <article key={policy} className={`comparison-card verdict-${verdict}`} data-policy={policy} data-verdict={verdict}>
+              <span className="comparison-card-title"><b aria-hidden="true">{verdictCopy.symbol}</b>{POLICY_LABELS[policy]}</span>
               <strong>{fmt(evidence.avg_wait)}s</strong>
               <small>P95 {fmt(evidence.p95_wait)}s · P99 {fmt(evidence.p99_wait)}s</small>
               <small>95% CI ±{fmt(evidence.avg_wait_ci95_halfwidth)}s</small>
               <small>vs collective {delta >= 0 ? "+" : ""}{fmt(delta)}s</small>
-              <DataPill label={evidence.guardrail_classification.replaceAll("_", " ")} tone={evidence.guardrail_classification === "candidate_improvement" ? "live" : "neutral"} />
+              <span className="verdict-label"><b>{verdictCopy.label}</b><small>{verdictCopy.detail}</small></span>
             </article>
           );
         })}
@@ -121,7 +151,10 @@ export function ExperimentsWorkbench({ payload }: { payload: ExperimentPayload }
             <caption>{scenario} policy evidence</caption>
             <thead><tr><th>Policy</th><th>Mean</th><th>P95</th><th>P99</th><th>Worst floor</th><th>Energy</th><th>Paired Δ</th><th>Guardrail</th></tr></thead>
             <tbody id="policy-ranking-body">
-              {ranked.map(({ policy, evidence }) => <tr key={policy} data-policy={policy}><td>{POLICY_LABELS[policy]}</td><td>{fmt(evidence.avg_wait)}</td><td>{fmt(evidence.p95_wait)}</td><td>{fmt(evidence.p99_wait)}</td><td>{fmt(evidence.worst_floor_mean_wait)}</td><td>{fmt(evidence.energy_proxy, 1)}</td><td>{fmt(evidence.avg_wait_delta_vs_collective)}</td><td>{evidence.guardrail_classification.replaceAll("_", " ")}</td></tr>)}
+              {ranked.map(({ policy, evidence }) => {
+                const verdict = evidenceVerdict(policy, evidence);
+                return <tr key={policy} data-policy={policy}><td>{POLICY_LABELS[policy]}</td><td>{fmt(evidence.avg_wait)}</td><td>{fmt(evidence.p95_wait)}</td><td>{fmt(evidence.p99_wait)}</td><td>{fmt(evidence.worst_floor_mean_wait)}</td><td>{fmt(evidence.energy_proxy, 1)}</td><td>{fmt(evidence.avg_wait_delta_vs_collective)}</td><td><span className={`table-verdict verdict-${verdict}`}><b aria-hidden="true">{VERDICT_COPY[verdict].symbol}</b>{VERDICT_COPY[verdict].label}</span></td></tr>;
+              })}
             </tbody>
           </table>
         </div>

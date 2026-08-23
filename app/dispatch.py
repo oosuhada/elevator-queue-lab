@@ -19,6 +19,11 @@ class CandidateEvaluation:
     score: float
     feasible: bool
     reason: str
+    age_seconds: float
+    capacity_shortfall: int
+    direction_mismatch: bool
+    load_ratio: float
+    score_terms: dict[str, float]
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -31,6 +36,14 @@ class CandidateEvaluation:
             "score": round(self.score, 3),
             "feasible": self.feasible,
             "reason": self.reason,
+            "age_seconds": round(self.age_seconds, 3),
+            "capacity_shortfall": self.capacity_shortfall,
+            "direction_mismatch": self.direction_mismatch,
+            "load_ratio": round(self.load_ratio, 6),
+            "score_terms": {
+                key: round(value, 3)
+                for key, value in self.score_terms.items()
+            },
         }
 
 
@@ -198,39 +211,44 @@ def build_evaluation(
     reserve = config.capacity_reserve
     usable_capacity = max(0, estimate.residual_capacity - reserve)
     capacity_shortfall = max(0, queue_size - usable_capacity)
+    load_ratio = elevator.load_ratio
+    score_terms: dict[str, float]
 
     if mode == "nearest":
-        score = estimate.pickup_eta
+        score_terms = {
+            "eta": estimate.pickup_eta,
+        }
     elif mode == "collective":
-        score = (
-            estimate.pickup_eta
-            + 8.0 * direction_mismatch
-            + 0.12 * estimate.route_cost
-            + 10.0 * elevator.load_ratio
-        )
+        score_terms = {
+            "eta": estimate.pickup_eta,
+            "direction": 8.0 * direction_mismatch,
+            "route": 0.12 * estimate.route_cost,
+            "load": 10.0 * load_ratio,
+        }
     elif mode == "queue_aware":
-        score = (
-            estimate.pickup_eta
-            + 0.18 * estimate.route_cost
-            + 18.0 * elevator.load_ratio
-            + 10.0 * direction_mismatch
-            + 55.0 * (1 if estimate.residual_capacity <= reserve else 0)
-        )
+        score_terms = {
+            "eta": estimate.pickup_eta,
+            "route": 0.18 * estimate.route_cost,
+            "load": 18.0 * load_ratio,
+            "direction": 10.0 * direction_mismatch,
+            "capacity_guard": 55.0 * (1 if estimate.residual_capacity <= reserve else 0),
+        }
     elif mode == "capr":
-        score = (
-            estimate.pickup_eta
-            + 0.15 * estimate.route_cost
-            + 12.0 * elevator.load_ratio
-            + 8.0 * direction_mismatch
-            + 120.0 * capacity_shortfall
-            - min(age, 180.0) * 0.08
-        )
+        score_terms = {
+            "eta": estimate.pickup_eta,
+            "route": 0.15 * estimate.route_cost,
+            "load": 12.0 * load_ratio,
+            "direction": 8.0 * direction_mismatch,
+            "capacity_shortfall": 120.0 * capacity_shortfall,
+            "age_credit": -min(age, 180.0) * 0.08,
+        }
     else:
         raise ValueError(f"unknown dispatch evaluation mode: {mode}")
 
     feasible = estimate.residual_capacity > reserve
     if mode == "capr" and not feasible:
-        score += 10_000.0
+        score_terms["feasibility_guard"] = 10_000.0
+    score = sum(score_terms.values())
 
     reason = (
         f"ETA {estimate.pickup_eta:.1f}s; residual {estimate.residual_capacity}/"
@@ -251,6 +269,11 @@ def build_evaluation(
         score=score,
         feasible=feasible,
         reason=reason,
+        age_seconds=age,
+        capacity_shortfall=capacity_shortfall,
+        direction_mismatch=bool(direction_mismatch),
+        load_ratio=load_ratio,
+        score_terms=score_terms,
     )
 
 

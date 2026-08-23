@@ -40,6 +40,9 @@ test("M8 workbench preserves live/replay evidence and exposes analysis surfaces"
   expect(latestDecision).toBeTruthy();
   await expect(page.locator("#decision-reason")).toHaveText(latestDecision.reason);
   await expect(page.locator("#decision-candidates tr")).toHaveCount(latestDecision.candidates.length);
+  await expect(page.locator(".candidate-instrument")).toHaveCount(latestDecision.candidates.length);
+  await expect(page.locator(".score-decomposition").first()).toBeVisible();
+  await expect(page.locator(".reassignment-gate")).toContainText("gate, not score term");
   for (const car of paused.elevators) {
     const locator = page.locator(`[data-car-id="${car.id}"]`);
     await expect(locator).toHaveAttribute("data-floor", String(car.floor));
@@ -56,6 +59,15 @@ test("M8 workbench preserves live/replay evidence and exposes analysis surfaces"
   await expect(page.locator("#live-state span")).toHaveText("REPLAY MODE");
   await expect(page.locator("#clock")).toHaveText(replay.frames[0].clock);
   await expect(page.locator("#queue")).toHaveText(String(replay.frames[0].metrics.current_queue));
+  await expect(page.locator(".timeline-marker")).not.toHaveCount(0);
+  const finalReplayIndex = replay.frames.length - 1;
+  await page.locator("#replay-slider").fill(String(finalReplayIndex));
+  await expect(page.locator("#clock")).toHaveText(replay.frames[finalReplayIndex].clock);
+  await expect(page.locator("#queue")).toHaveText(String(replay.frames[finalReplayIndex].metrics.current_queue));
+  const replayDecision = replay.frames[finalReplayIndex].decision_tail.at(-1);
+  if (replayDecision) {
+    await expect(page.locator("#decision-reason")).toHaveText(replayDecision.reason);
+  }
   await page.locator("#return-live").click();
   await expect(page.locator("#live-state span")).toHaveText("PAUSED");
   await expect(page.locator("#clock")).toHaveText(paused.clock);
@@ -64,6 +76,7 @@ test("M8 workbench preserves live/replay evidence and exposes analysis surfaces"
   await page.getByRole("button", { name: "Experiments" }).click();
   await expect(page.getByRole("heading", { name: "Experiments" })).toBeVisible();
   await expect(page.locator("#comparison-cards .comparison-card")).toHaveCount(5);
+  await expect(page.locator(".verdict-key")).toHaveCount(5);
   await expect(page.locator("#policy-density-chart .density-series")).toHaveCount(5);
   await expect(page.locator("#policy-ranking-body tr")).toHaveCount(5);
   const experiment = await (await request.get("/api/experiment")).json();
@@ -93,11 +106,13 @@ test("M8 workbench preserves live/replay evidence and exposes analysis surfaces"
 
   await page.getByRole("button", { name: "Explorer" }).click();
   await expect(page.getByTestId("explorer-workbench")).toBeVisible();
-  await page.getByRole("button", { name: /DispatchDecision/ }).click();
+  await page.locator(".object-type-list").getByRole("button", { name: /^DispatchDecision / }).click();
   await expect(page.locator(".object-list button").first()).toBeVisible();
   await page.locator(".object-list button").first().click();
   await expect(page.getByTestId("decision-trace")).toBeVisible();
   await expect(page.locator(".react-flow__node").first()).toBeVisible();
+  await expect(page.locator(".graph-alternative")).toHaveAttribute("open", "");
+  await expect(page.locator(".graph-alternative button").first()).toBeVisible();
   const graph = await (await request.get(`/api/runs/${runId}/graph`)).json();
   expect(graph.nodes.length).toBeGreaterThan(6);
   expect(graph.provenance.database).toBeNull();

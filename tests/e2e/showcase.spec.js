@@ -31,7 +31,7 @@ test("capture portfolio showcase from the real workbench", async ({ page, reques
   ]) {
     await page.getByRole("button", { name }).click();
     if (name === "Explorer") {
-      await page.getByRole("button", { name: /DispatchDecision/ }).click();
+      await page.locator(".object-type-list").getByRole("button", { name: /^DispatchDecision / }).click();
       await expect(page.getByTestId("decision-trace")).toBeVisible();
     }
     await page.screenshot({ path: path.join(output, file), fullPage: true });

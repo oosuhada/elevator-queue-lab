@@ -34,12 +34,25 @@ passenger is represented from arrival at a hall call
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
-![Elevator Queue Lab M8 decision intelligence workbench](docs/assets/showcase/m8-live-operations.png)
+![Elevator Queue Lab architectural section live operations](docs/assets/portfolio-ui/live-desktop-1440.png)
 
-The screenshot above is captured by Playwright from the real Python server and production React
-build after CAPR has produced a reassignment. It is not a mockup or static chart fixture. The public
-demo uses the same single-process Python/static-serving contract; this exact M8 commit is only
-considered publicly verified after it has been deployed and remote QA has passed.
+The current authored UI uses an **Architectural Section × Kinetic Transit Laboratory** direction:
+warm-white/concrete surfaces, graphite structure lines, restrained cyan/safety-orange state marks,
+an 18-floor sectional building instrument and a physical replay timeline. The desktop workbench rail
+shows full navigation labels by default, can be pinned collapsed/expanded, and temporarily expands
+on hover or keyboard focus when collapsed. The screenshot is captured
+by Chromium from the real local Python server after a CAPR shock run; it is not a mockup or static
+chart fixture. The public demo uses the same single-process Python/static-serving contract at
+`https://elevator.oosu.dev/`.
+
+| 2.5D comparison study | Purpose-built 390px mobile |
+| --- | --- |
+| ![Optional 2.5D architectural section study](docs/assets/portfolio-ui/live-depth-study-1440.png) | ![Elevator Queue Lab mobile live operations](docs/assets/portfolio-ui/live-mobile-390.png) |
+
+The 2.5D React Three Fiber view is an optional desktop study using the same simulator `Snapshot`.
+It is lazy-loaded and disabled on compact, low-power or WebGL-unavailable clients. The accessible,
+testable 2D section remains authoritative because it exposes floor, car, queue and assignment state
+more clearly. See `docs/reference-adoption.md` for the measured comparison and license audit.
 
 > **Research takeaway — congestion alone is not the trigger.** Continuous predictive reassignment
 > becomes valuable when **heavy traffic and enough counterflow rise together**, because opposing
@@ -65,7 +78,8 @@ superiority**.
 - React + TypeScript authored frontend in `frontend/`, with Vite producing the committed `web/`
   production artifact so `python -m app.server --port 4173` remains the one-command runtime;
 - Decision Intelligence Product Shell with Live Operations, Runs, Dispatch Analysis, Experiments,
-  Counterflow Criticality, Models and Object Explorer workbenches;
+  Counterflow Criticality, Models and Object Explorer workbenches, plus a full-label desktop rail
+  that can be pinned open/closed or temporarily expanded on hover/focus;
 - deterministic origin/destination passenger traces with canonical JSON + SHA-256 identity;
 - versioned trace/run/dispatch/evidence artifact catalog with seed/scenario/policy/config provenance;
 - sub-second six-car simulator with acceleration/deceleration, doors and passenger transfer time;
@@ -74,13 +88,19 @@ superiority**.
 - route-insertion ETA, predicted pickup capacity, call-age scoring and demand-aware parking;
 - assignment/reassignment decision ledger containing candidate scores and human-readable reasons;
 - regression coverage for the motivating **17F full car / 16F waiting passenger** case;
-- portfolio-grade 18-floor live digital twin with car phase/load/route, queue badges and assignment links;
+- portfolio-grade architectural-section 18-floor live digital twin with low/high zones, car
+  phase/load/door/direction state, queue badges, assignment/reassignment, stale-assignment and
+  full-pass notation plus a desktop-only 2.5D comparison study sourced from the same snapshot;
 - floor queue heatmap plus live/replay wait and queue time series sourced only from simulator state;
-- dispatch event stream and candidate-level decision inspector for assignment/reassignment reasoning;
-- deterministic saved-run replay with a timeline scrubber and live/replay state switching;
+- dispatch event stream and candidate-level decision inspector with exact ETA, route, residual
+  capacity, age and recorded score-term decomposition plus explicit CAPR reassignment gates;
+- deterministic saved-run replay with a physical event timeline for reassignments, full passes,
+  policy state, wait spikes and the selected decision; building, charts and inspector move to the
+  same replay frame;
 - browseable Elevator/Passenger/HallCall/DispatchDecision/Run/Experiment/Model/Evidence objects;
-- read-only Decision Trace graph projected from simulator state, decision history and the event
-  ledger, with pan/zoom/fit-view and inspector linkage;
+- read-only xyflow Decision Trace graph projected from simulator state, decision history and the
+  event ledger, with deterministic evidence stages, pan/zoom/focus, inspector linkage and an open
+  accessible relationship-list alternative;
 - deterministic **Ask This Run** explanations backed by recorded evidence and committed M3
   comparisons; no LLM is required or treated as a source of truth;
 - typed semantic `ChartSpec` validation and registered React renderers instead of arbitrary

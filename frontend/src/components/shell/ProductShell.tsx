@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { DataPill } from "../common/DataPill";
 
 
@@ -45,15 +45,36 @@ export function ProductShell({
   status,
   children,
 }: ProductShellProps) {
+  const [railExpanded, setRailExpanded] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("eql.navigationRailExpanded");
+      return stored === null ? true : stored === "true";
+    } catch {
+      return true;
+    }
+  });
+
+  function toggleRail() {
+    setRailExpanded((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem("eql.navigationRailExpanded", String(next));
+      } catch {
+        // Persistence is optional; navigation remains functional without storage access.
+      }
+      return next;
+    });
+  }
+
   return (
-    <div className="product-shell">
+    <div className={railExpanded ? "product-shell rail-expanded" : "product-shell rail-collapsed"}>
       <header className="global-header">
         <button className="brand-mark" type="button" onClick={() => onNavigate("live")} aria-label="Open Live Operations">
           EQL
         </button>
         <div className="brand-copy">
           <strong>Elevator Queue Lab</strong>
-          <span>Decision Intelligence Workbench</span>
+          <span>Vertical Traffic Laboratory · Section A-A</span>
         </div>
         <div className="global-header-status">
           <DataPill label={status.mode} tone={status.mode === "LIVE" ? "live" : "neutral"} />
@@ -62,7 +83,17 @@ export function ProductShell({
         </div>
       </header>
 
-      <aside className="product-rail" aria-label="Workbench navigation">
+      <aside className="product-rail" aria-label="Workbench navigation" data-expanded={railExpanded ? "true" : "false"}>
+        <button
+          className="rail-toggle"
+          type="button"
+          aria-label={railExpanded ? "Collapse navigation" : "Expand navigation"}
+          aria-expanded={railExpanded}
+          onClick={toggleRail}
+        >
+          <span aria-hidden="true">{railExpanded ? "←" : "→"}</span>
+          <small>{railExpanded ? "Collapse" : "Expand"}</small>
+        </button>
         {NAV_ITEMS.map((item) => (
           <button
             key={item.key}
@@ -82,7 +113,7 @@ export function ProductShell({
       <section className="resource-surface">
         <div className="resource-header">
           <div>
-            <span className="resource-eyebrow">{active.replace("-", " ")}</span>
+            <span className="resource-eyebrow">EQL / {active.replace("-", " ")} / evidence instrument</span>
             <h1>{title}</h1>
             <p>{subtitle}</p>
           </div>
@@ -102,7 +133,7 @@ export function ProductShell({
       <footer className="status-bar">
         <span>provenance: {status.provenance ?? "live simulator"}</span>
         <span>{status.runId ?? "run pending"}</span>
-        <span>seeded reproducibility · no fabricated metrics</span>
+        <span>simulator state authoritative · seeded reproducibility · no fabricated metrics</span>
       </footer>
     </div>
   );

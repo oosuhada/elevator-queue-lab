@@ -1,2 +1,2 @@
-models/*.json text eol=lf
-evidence/*.json text eol=lf
+# Vite's committed production bundle contains third-party template-literal whitespace (not authored source).
+web/assets/*.js -whitespace

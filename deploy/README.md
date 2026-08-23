@@ -16,12 +16,19 @@ From a clone of this repository on the Mac mini:
 git fetch origin main
 git switch main
 git pull --ff-only
-PYTHON_BIN="$(command -v python3)" PORT=4174 bash deploy/install_macos.sh
+PORT=4174 bash deploy/install_macos.sh
 curl -fsS http://127.0.0.1:4174/api/health
 ```
 
 The installer creates `~/Library/LaunchAgents/dev.oosu.elevator-queue-lab.plist`, keeps the
 process alive, and writes logs to `~/Library/Logs/elevator-queue-lab/`.
+
+M8 requires **Python 3.11 or newer**. The installer prefers a supported Homebrew Python at
+`/opt/homebrew/bin/python3` or `/usr/local/bin/python3`, then checks the `python3` available on
+`PATH`. This matters on macOS because non-interactive SSH sessions can resolve `/usr/bin/python3`
+to the Command Line Tools Python 3.9 even when a newer Homebrew Python is installed. To pin a
+specific interpreter, pass `PYTHON_BIN=/absolute/path/to/python3`; unsupported versions fail before
+launchd is modified.
 
 ## 2. Publish `elevator.oosu.dev`
 

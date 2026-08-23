@@ -6,14 +6,23 @@ import json
 import mimetypes
 import threading
 import time
+import uuid
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
+from .artifacts import build_run_artifact
 from .domain import SimulationConfig
 from .simulator import ElevatorSimulation
+from .workbench import (
+    answer_run_question,
+    build_artifacts_payload,
+    build_decision_graph,
+    build_models_payload,
+    build_objects,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +42,7 @@ class SimulationRunner:
         self.scenario = "morning"
         self.policy = "capr"
         self.control_mode = "conventional"
+        self.run_id = self._new_run_id()
         self.simulation = self._new_simulation()
         self.replay_frames: list[dict[str, Any]] = []
         self.saved_replay: dict[str, Any] | None = None
@@ -41,6 +51,9 @@ class SimulationRunner:
         self.closed = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
+
+    def _new_run_id(self) -> str:
+        return f"run-{uuid.uuid4().hex[:12]}"
 
     def _new_simulation(self) -> ElevatorSimulation:
         return ElevatorSimulation(
@@ -104,7 +117,7 @@ class SimulationRunner:
             if "speed" in payload:
                 self.speed = max(1, min(120, int(payload["speed"])))
             requires_reset = (
-                action == "reset"
+                action in {"reset", "reset_paused"}
                 or next_scenario != self.scenario
                 or next_policy != self.policy
                 or next_control_mode != self.control_mode
@@ -113,11 +126,12 @@ class SimulationRunner:
                 self.scenario = next_scenario
                 self.policy = next_policy
                 self.control_mode = next_control_mode
+                self.run_id = self._new_run_id()
                 self.simulation = self._new_simulation()
                 self.replay_frames = []
                 self._last_replay_second = -1
                 self._record_replay_frame(force=True)
-            if action == "pause":
+            if action in {"pause", "reset_paused"}:
                 self.running = False
             elif action in {"start", "reset", "update"}:
                 self.running = True
@@ -191,6 +205,26 @@ class SimulationRunner:
             "validation": json.loads(M7_VALIDATION.read_text(encoding="utf-8")),
         }
 
+    def run_artifact(self) -> dict[str, Any]:
+        with self.lock:
+            return build_run_artifact(self.simulation, self.run_id)
+
+    def objects(self, object_type: str | None = None) -> dict[str, Any]:
+        with self.lock:
+            return build_objects(self.simulation, self.run_id, object_type)
+
+    def graph(self) -> dict[str, Any]:
+        with self.lock:
+            return build_decision_graph(self.simulation, self.run_id)
+
+    def ask(self, question: str) -> dict[str, Any]:
+        with self.lock:
+            return answer_run_question(self.simulation, self.run_id, question)
+
+    def artifacts(self) -> dict[str, Any]:
+        with self.lock:
+            return build_artifacts_payload(self.simulation, self.run_id)
+
 
 class Handler(BaseHTTPRequestHandler):
     runner: SimulationRunner
@@ -219,6 +253,35 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/theory":
             try:
                 return self._send_json(self.runner.theory())
+            except FileNotFoundError as exc:
+                return self._send_json(
+                    {"error": str(exc)},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+        if parsed.path == "/api/runs":
+            return self._send_json(
+                {
+                    "schema": "elevator-queue-lab.runs.v1",
+                    "runs": [self.runner.run_artifact()],
+                }
+            )
+        if parsed.path == f"/api/runs/{self.runner.run_id}":
+            return self._send_json(self.runner.run_artifact())
+        if parsed.path == f"/api/runs/{self.runner.run_id}/objects":
+            object_type = parse_qs(parsed.query).get("type", [None])[0]
+            return self._send_json(self.runner.objects(object_type))
+        if parsed.path == f"/api/runs/{self.runner.run_id}/decisions":
+            return self._send_json(self.runner.objects("DispatchDecision"))
+        if parsed.path == f"/api/runs/{self.runner.run_id}/graph":
+            return self._send_json(self.runner.graph())
+        if parsed.path == f"/api/runs/{self.runner.run_id}/ask":
+            question = parse_qs(parsed.query).get("q", [""])[0]
+            return self._send_json(self.runner.ask(question))
+        if parsed.path == "/api/artifacts":
+            return self._send_json(self.runner.artifacts())
+        if parsed.path == "/api/models":
+            try:
+                return self._send_json(build_models_payload())
             except FileNotFoundError as exc:
                 return self._send_json(
                     {"error": str(exc)},

@@ -39,8 +39,7 @@ outcomes instead of visual car movement alone.
 The current authored UI uses an **Architectural Section × Kinetic Transit Laboratory** direction:
 warm-white/concrete surfaces, graphite structure lines, restrained cyan/safety-orange state marks,
 an 18-floor sectional building instrument and a physical replay timeline. The desktop workbench rail
-shows full navigation labels by default, can be pinned collapsed/expanded, and temporarily expands
-on hover or keyboard focus when collapsed. The screenshot is captured
+uses a fixed wide layout so every navigation label remains fully readable. The screenshot is captured
 by Chromium from the real local Python server after a CAPR shock run; it is not a mockup or static
 chart fixture. The public demo uses the same single-process Python/static-serving contract at
 `https://elevator.oosu.dev/`.
@@ -78,8 +77,7 @@ superiority**.
 - React + TypeScript authored frontend in `frontend/`, with Vite producing the committed `web/`
   production artifact so `python -m app.server --port 4173` remains the one-command runtime;
 - Decision Intelligence Product Shell with Live Operations, Runs, Dispatch Analysis, Experiments,
-  Counterflow Criticality, Models and Object Explorer workbenches, plus a full-label desktop rail
-  that can be pinned open/closed or temporarily expanded on hover/focus;
+  Counterflow Criticality, Models and Object Explorer workbenches, plus a full-label desktop rail;
 - deterministic origin/destination passenger traces with canonical JSON + SHA-256 identity;
 - versioned trace/run/dispatch/evidence artifact catalog with seed/scenario/policy/config provenance;
 - sub-second six-car simulator with acceleration/deceleration, doors and passenger transfer time;

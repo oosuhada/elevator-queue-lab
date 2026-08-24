@@ -229,3 +229,7 @@ claim formal standards compliance. See `docs/MODELING_PROTOCOL.md` for scope and
 ## License
 
 MIT, unless a later dependency or imported dataset requires a narrower notice.
+
+## Topics
+
+[`digital-twin`](https://github.com/topics/digital-twin) · [`elevator-control`](https://github.com/topics/elevator-control) · [`optimization`](https://github.com/topics/optimization) · [`python`](https://github.com/topics/python) · [`queueing-theory`](https://github.com/topics/queueing-theory) · [`reinforcement-learning`](https://github.com/topics/reinforcement-learning) · [`research-tool`](https://github.com/topics/research-tool) · [`simulation`](https://github.com/topics/simulation)

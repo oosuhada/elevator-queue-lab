@@ -1,13 +1,30 @@
 # Elevator Queue Lab
 
-**A reproducible elevator group-control research lab for an 18-floor office building.**
+**A reproducible decision-intelligence workbench for elevator group-control research.**
 
 **Live demo:** [https://elevator.oosu.dev/](https://elevator.oosu.dev/)
 
-Elevator Queue Lab starts from a practical failure mode: a hall call is assigned to a car, that
-car later becomes full or follows a poor route, and the passenger waits while the controller keeps
-treating the stale assignment as valid. The project turns that observation into a controlled
-simulation and optimization problem.
+Elevator Queue Lab lets a reviewer **simulate, observe, inspect, explain, replay, compare and
+falsify** dispatch decisions from passenger-level evidence. It starts from a practical failure
+mode: a hall call is assigned to a car, that car later becomes full or follows a poor route, and
+the passenger waits while the controller keeps treating the stale assignment as valid.
+
+## 30-second orientation
+
+| Question | Answer |
+| --- | --- |
+| **What problem is being studied?** | Stale elevator assignments under stochastic load: a car that looked good at assignment time may become a poor or impossible pickup before it arrives. |
+| **What is CAPR?** | Capacity-Aware Predictive Reassignment: route-insertion ETA + predicted residual capacity + route/load/age scoring + continuous reassignment with hysteresis. |
+| **What did the experiments show?** | CAPR is **traffic-regime dependent**, not globally superior. Lunch is a clean M3 candidate improvement; several other regimes expose wait/energy trade-offs or no mean-wait win. |
+| **What is Counterflow Criticality?** | M7 evidence supports a fuzzy congestion × counterflow transition: continuous reassignment becomes more valuable when traffic intensity and opposing directional flow rise together. The fitted threshold is **not** a universal critical constant. |
+| **Did RL beat the heuristics?** | No general superiority was established. The fixed M5 Dueling Double DQN improves only the held-out mixed-day mixture cleanly; five base regimes regress versus collective. |
+| **Can I reproduce it?** | Yes. The repository keeps deterministic traces, versioned provenance, committed statistical evidence, a production Python server path, unit/contract tests, Playwright E2E and visual regression. |
+
+The product flow is:
+
+```text
+SIMULATE → OBSERVE → INSPECT → EXPLAIN → REPLAY → COMPARE → FALSIFY
+```
 
 The target building has **18 floors and six passenger elevators**: three low-zone cars and three
 high-zone cars. The default synthetic workplace mix is deliberately lobby-centric: **85% of trips
@@ -17,11 +34,12 @@ passenger is represented from arrival at a hall call
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
-![Elevator Queue Lab live digital twin](docs/assets/m6-dashboard.png)
+![Elevator Queue Lab M8 decision intelligence workbench](docs/assets/showcase/m8-live-operations.png)
 
-The screenshot above is captured from the deployed public simulator at `elevator.oosu.dev` after
-Chromium verifies the live UI/API contract: all six cars, all 18 floors, the evidence cards, the
-learned-policy control path and simulator audit. It is not a mockup or static chart fixture.
+The screenshot above is captured by Playwright from the real Python server and production React
+build after CAPR has produced a reassignment. It is not a mockup or static chart fixture. The public
+demo uses the same single-process Python/static-serving contract; this exact M8 commit is only
+considered publicly verified after it has been deployed and remote QA has passed.
 
 > **Research takeaway — congestion alone is not the trigger.** Continuous predictive reassignment
 > becomes valuable when **heavy traffic and enough counterflow rise together**, because opposing
@@ -44,7 +62,12 @@ superiority**.
 
 ## Current executable surface
 
+- React + TypeScript authored frontend in `frontend/`, with Vite producing the committed `web/`
+  production artifact so `python -m app.server --port 4173` remains the one-command runtime;
+- Decision Intelligence Product Shell with Live Operations, Runs, Dispatch Analysis, Experiments,
+  Counterflow Criticality, Models and Object Explorer workbenches;
 - deterministic origin/destination passenger traces with canonical JSON + SHA-256 identity;
+- versioned trace/run/dispatch/evidence artifact catalog with seed/scenario/policy/config provenance;
 - sub-second six-car simulator with acceleration/deceleration, doors and passenger transfer time;
 - low/high zoned banks and both conventional hall-call and destination-control grouping;
 - sticky, nearest-car, collective, queue-aware and CAPR dispatch policies;
@@ -55,6 +78,13 @@ superiority**.
 - floor queue heatmap plus live/replay wait and queue time series sourced only from simulator state;
 - dispatch event stream and candidate-level decision inspector for assignment/reassignment reasoning;
 - deterministic saved-run replay with a timeline scrubber and live/replay state switching;
+- browseable Elevator/Passenger/HallCall/DispatchDecision/Run/Experiment/Model/Evidence objects;
+- read-only Decision Trace graph projected from simulator state, decision history and the event
+  ledger, with pan/zoom/fit-view and inspector linkage;
+- deterministic **Ask This Run** explanations backed by recorded evidence and committed M3
+  comparisons; no LLM is required or treated as a source of truth;
+- typed semantic `ChartSpec` validation and registered React renderers instead of arbitrary
+  generated HTML/JavaScript;
 - 30-seed common-random-number experiment engine with morning/lunch/normal/evening/shock/mixed-day;
 - P50/P95/P99 wait, journey time, throughput, unfinished queue, reassignment latency, floor fairness,
   capacity misses and a transparent comparative energy proxy;
@@ -70,7 +100,9 @@ superiority**.
 - `rl` runtime policy selectable in the live digital twin using the checked-in M5 model;
 - JSON + run-level CSV + summary CSV evidence artifacts, paired effect sizes and guardrail flags;
 - Playwright browser verification that visible metrics, all six cars and all 18 floor queues match API/replay state;
-- responsive desktop/mobile visual QA with screenshots generated from that same verified browser run.
+- deterministic visual regression for Live Operations desktop/mobile, Replay, Experiments, Theory,
+  Models and Explorer/Decision Trace;
+- `npm run capture:showcase` portfolio capture from the real backend and production frontend.
 
 ## 30-seed evidence: CAPR is regime-dependent
 
@@ -173,21 +205,33 @@ limitations, and `docs/M6_EVIDENCE_SUMMARY.md` for tables generated directly fro
 
 ## Run locally
 
-Python 3.11+ is enough for the simulator and research server.
+Python 3.11+ is enough to run the committed production workbench. Node is only required when
+changing or rebuilding the React frontend.
 
 ```bash
 python -m app.server --port 4173
 ```
 
 Open `http://127.0.0.1:4173`. The UI can switch traffic regime, policy, simulation speed and
-conventional versus destination-control call input, save the current run, scrub deterministic
-replay frames and inspect the M3 comparison evidence.
+conventional versus destination-control call input, save and scrub replay, inspect dispatch
+decisions, browse run objects and Decision Trace, query deterministic explanations and inspect
+committed M3/M5/M7 evidence.
+
+Frontend contributor gates:
+
+```bash
+npm ci --prefix frontend
+npm run typecheck --prefix frontend
+npm test --prefix frontend
+npm run build --prefix frontend
+```
 
 Run validation and evidence generation:
 
 ```bash
 python -m unittest discover -s tests -v
 python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json
+python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json --package-dir /tmp/evening-trace-package
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3
 python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3 --control-mode destination
 python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
@@ -201,24 +245,32 @@ python scripts/audit_release.py
 For browser/API visual verification:
 
 ```bash
-npm install
+npm ci
+npm ci --prefix frontend
+npm run frontend:build
 npx playwright install chromium
-python -m app.server --port 4173
 npm run test:e2e
+npm run capture:showcase
 ```
+
+Playwright starts the production Python server automatically unless `BASE_URL` points at an
+already-running instance. Intentional visual-baseline updates use `npm run test:e2e:update`.
 
 The matrix command emits a self-describing JSON artifact plus `*.runs.csv` and `*.summary.csv`.
 Artifacts explicitly record a zero-second warm-up and the measurement window used by the run.
 
 ## Project status
 
-**M0 reproducibility through M6 portfolio release are implemented.** The fixed M5 checkpoint has a
-30-seed held-out release artifact, the final report/plots are generated from committed evidence,
-and the public Mac mini deployment is live at `https://elevator.oosu.dev/`. External Chromium QA
-verifies HTTP 200, six cars, all 18 floors, five evidence cards, the RL `mixed_day` control path,
-simulator audit success, zero failed browser requests and zero console errors.
-`docs/ROADMAP.md` is the canonical work queue and `AGENTS.md` defines the continuation contract for
-future coding sessions.
+**M0 through M8 are implemented in the repository.** The research simulator, 30-seed evidence,
+negative/mixed learned-controller result and M7 falsification evidence are preserved; M8 adds the
+typed decision-intelligence product layer without rewriting the simulator core. See
+`docs/M8_PRODUCT_WORKBENCH.md` for the architecture and migration contract.
+
+The existing public Mac mini demo remains at `https://elevator.oosu.dev/`. A local or PR M8 result
+is not treated as proof that the public instance has been upgraded: deployment and remote
+Chromium/API QA must be run against the exact M8 commit before that claim is made.
+`docs/ROADMAP.md` remains the canonical milestone record and `AGENTS.md` defines the continuation
+contract.
 
 ## Methodology references
 
@@ -239,4 +291,4 @@ MIT, unless a later dependency or imported dataset requires a narrower notice.
 [`control-systems`](https://github.com/topics/control-systems) · [`dispatch-algorithm`](https://github.com/topics/dispatch-algorithm) · [`elevator`](https://github.com/topics/elevator) · [`elevator-control`](https://github.com/topics/elevator-control) · [`gymnasium`](https://github.com/topics/gymnasium) · [`machine-learning`](https://github.com/topics/machine-learning) · [`operations-research`](https://github.com/topics/operations-research) · [`optimization`](https://github.com/topics/optimization) · [`queueing-theory`](https://github.com/topics/queueing-theory) · [`reinforcement-learning`](https://github.com/topics/reinforcement-learning) · [`research-tool`](https://github.com/topics/research-tool) · [`simulation`](https://github.com/topics/simulation) · [`traffic-simulation`](https://github.com/topics/traffic-simulation)
 
 **Implementation stack / 구현 스택**<br>
-[`python`](https://github.com/topics/python)
+[`python`](https://github.com/topics/python) · [`react`](https://github.com/topics/react) · [`typescript`](https://github.com/topics/typescript) · [`playwright`](https://github.com/topics/playwright)

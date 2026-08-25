@@ -2,6 +2,8 @@
 
 **A reproducible decision-intelligence workbench for elevator group-control research.**
 
+**엘리베이터 군제어 연구를 위한 재현 가능한 Decision Intelligence Workbench입니다.**
+
 **Live demo:** [https://elevator.oosu.dev/](https://elevator.oosu.dev/)
 
 Elevator Queue Lab lets a reviewer **simulate, observe, inspect, explain, replay, compare and
@@ -9,7 +11,9 @@ falsify** dispatch decisions from passenger-level evidence. It starts from a pra
 mode: a hall call is assigned to a car, that car later becomes full or follows a poor route, and
 the passenger waits while the controller keeps treating the stale assignment as valid.
 
-## 30-second orientation
+Elevator Queue Lab은 승객 단위 evidence를 기반으로 dispatch decision을 **simulate, observe, inspect, explain, replay, compare, falsify**할 수 있게 합니다. 핵심 문제는 assignment 시점에는 적절했던 car가 이후 full 상태나 route 변화로 나쁜 pickup 후보가 되었는데도 controller가 stale assignment를 계속 유지하는 상황입니다.
+
+## 30-second orientation / 30초 요약
 
 | Question | Answer |
 | --- | --- |
@@ -19,6 +23,15 @@ the passenger waits while the controller keeps treating the stale assignment as 
 | **What is Counterflow Criticality?** | M7 evidence supports a fuzzy congestion × counterflow transition: continuous reassignment becomes more valuable when traffic intensity and opposing directional flow rise together. The fitted threshold is **not** a universal critical constant. |
 | **Did RL beat the heuristics?** | No general superiority was established. The fixed M5 Dueling Double DQN improves only the held-out mixed-day mixture cleanly; five base regimes regress versus collective. |
 | **Can I reproduce it?** | Yes. The repository keeps deterministic traces, versioned provenance, committed statistical evidence, a production Python server path, unit/contract tests, Playwright E2E and visual regression. |
+
+| 질문 | 답변 |
+| --- | --- |
+| **무슨 문제를 연구하나?** | Stochastic load에서 stale elevator assignment가 평균·tail wait, capacity miss, fairness에 어떤 영향을 주는지 연구합니다. |
+| **CAPR은 무엇인가?** | Capacity-Aware Predictive Reassignment로, route-insertion ETA, predicted residual capacity, route/load/age score, continuous reassignment와 hysteresis를 결합합니다. |
+| **실험 결과는?** | CAPR은 전역적으로 우월하지 않고 traffic regime에 따라 효과가 달랐습니다. Lunch는 clean candidate improvement이고 다른 regime은 wait/energy trade-off 또는 평균 wait 악화를 보입니다. |
+| **Counterflow Criticality는?** | Traffic intensity와 opposing directional flow가 함께 높아질수록 continuous reassignment의 가치가 커진다는 fuzzy transition 가설입니다. Universal constant로 주장하지 않습니다. |
+| **RL이 heuristic을 이겼나?** | 일반적 우월성은 확인되지 않았습니다. Held-out mixed-day에서만 clean improvement가 나타났고 다섯 base regime에서는 collective 대비 악화했습니다. |
+| **재현 가능한가?** | 가능합니다. Deterministic trace, versioned provenance, committed statistical evidence, production server path, browser verification asset을 저장합니다. |
 
 The product flow is:
 
@@ -34,6 +47,8 @@ passenger is represented from arrival at a hall call
 through boarding and destination arrival, so dispatch decisions can be evaluated on passenger
 outcomes instead of visual car movement alone.
 
+대상 건물은 **18층, 6대의 승객용 엘리베이터**이며 low-zone 3대와 high-zone 3대로 구성합니다. 기본 synthetic workplace demand는 1F 중심 85%, 18F roof-access proxy 10%, same-bank inter-floor 5%로 두고, 시간대에 따라 trip-purpose mix 자체보다 방향성을 변화시킵니다. 모든 승객의 arrival → assignment → boarding → destination arrival을 추적해 단순 car animation이 아니라 passenger outcome으로 정책을 평가합니다.
+
 ![Elevator Queue Lab architectural section live operations](docs/assets/portfolio-ui/live-desktop-1440.png)
 
 The current authored UI uses an **Architectural Section × Kinetic Transit Laboratory** direction:
@@ -44,14 +59,16 @@ by Chromium from the real local Python server after a CAPR shock run; it is not 
 chart fixture. The public demo uses the same single-process Python/static-serving contract at
 `https://elevator.oosu.dev/`.
 
-| 2.5D comparison study | Purpose-built 390px mobile |
+| 2.5D comparison study / 2.5D 비교 연구 | Purpose-built 390px mobile / 390px 모바일 |
 | --- | --- |
-| ![Optional 2.5D architectural section study](docs/assets/portfolio-ui/live-depth-study-1440.png) | ![Elevator Queue Lab mobile live operations](docs/assets/portfolio-ui/live-mobile-390.png) |
+| ![Optional 2.5D architectural section study](docs/assets/portfolio-ui/live-depth-study-1440.png)<br/><br/><img src="docs/assets/portfolio-ui/live-depth-study-detail-1440.png" alt="2.5D elevator digital twin detailed study" /> | ![Elevator Queue Lab mobile live operations](docs/assets/portfolio-ui/live-mobile-390.png) |
 
 The 2.5D React Three Fiber view is an optional desktop study using the same simulator `Snapshot`.
 It is lazy-loaded and disabled on compact, low-power or WebGL-unavailable clients. The accessible,
 testable 2D section remains authoritative because it exposes floor, car, queue and assignment state
 more clearly. See `docs/reference-adoption.md` for the measured comparison and license audit.
+
+2.5D React Three Fiber view는 같은 simulator `Snapshot`을 읽는 optional desktop study입니다. Compact viewport, low-power, WebGL unavailable 환경에서는 비활성화되며, floor/car/queue/assignment state를 더 명확하게 노출하는 2D section이 authoritative view로 유지됩니다.
 
 > **Research takeaway — congestion alone is not the trigger.** Continuous predictive reassignment
 > becomes valuable when **heavy traffic and enough counterflow rise together**, because opposing
@@ -60,7 +77,7 @@ more clearly. See `docs/reference-adoption.md` for the measured comparison and l
 > enough to justify the churn.** The M7 controlled sweep and held-out falsification below quantify
 > this as the Counterflow Criticality Hypothesis.
 
-## Research question
+## Research question / 연구 질문
 
 > Can continuous capacity-aware reassignment and demand-aware pre-positioning reduce both average
 > and tail waiting time in a zoned six-car office elevator group without creating unacceptable
@@ -72,7 +89,11 @@ invalidates a predicted-full car before the failed pickup, and uses hysteresis t
 reassignment oscillation. It remains a **hypothesis to test, not a claim of novelty or universal
 superiority**.
 
-## Current executable surface
+연구 질문은 **continuous capacity-aware reassignment와 demand-aware pre-positioning이 zoned six-car office elevator group에서 평균 및 tail waiting time을 줄이면서도 energy/fairness guardrail을 지킬 수 있는가?**입니다. CAPR은 검증해야 할 hypothesis이며 novelty나 universal superiority를 주장하지 않습니다.
+
+## Current executable surface / 현재 실행 가능한 기능
+
+현재 surface는 React + TypeScript workbench, deterministic passenger trace, six-car sub-second simulator, multiple dispatch policies, decision ledger, replay, Decision Trace graph, M3/M5/M7 evidence workbench, learned-policy artifact, typed `ChartSpec`, JSON/CSV evidence export를 하나의 product shell에서 연결합니다.
 
 - React + TypeScript authored frontend in `frontend/`, with Vite producing the committed `web/`
   production artifact so `python -m app.server --port 4173` remains the one-command runtime;
@@ -122,7 +143,7 @@ superiority**.
   Models and Explorer/Decision Trace;
 - `npm run capture:showcase` portfolio capture from the real backend and production frontend.
 
-## 30-seed evidence: CAPR is regime-dependent
+## 30-seed evidence: CAPR is regime-dependent / 30-se드 근거: CAPR은 traffic regime에 의존
 
 The first M3 matrix runs **30 seeds × 6 scenarios × 5 policies = 900 controller simulations** with
 the same passenger trace for every policy at a given seed. It deliberately does not produce a
@@ -140,7 +161,9 @@ single global winner.
 See `docs/M3_FINDINGS.md` for the full interpretation and limitations. These are reproducible
 simulation results, **not real-building performance claims**.
 
-## M7 theory candidate: counterflow criticality
+M3의 30 seed × 6 scenario × 5 policy 비교는 CAPR이 단일 global winner가 아니라는 점을 보여줍니다. Lunch는 clean candidate improvement이지만 Morning/Normal/Mixed-day는 energy trade-off가 있고 Evening/Shock에서는 collective 평균 wait을 이기지 못했습니다. 이는 재현 가능한 simulation result이며 실제 건물 성능 주장이 아닙니다.
+
+## M7 theory candidate: counterflow criticality / M7 이론 후보: Counterflow Criticality
 
 **Key takeaway:** “reassign under congestion” is too crude. The evidence instead supports a
 **congestion × counterflow** rule: stale-assignment correction becomes materially more valuable only
@@ -181,9 +204,11 @@ falsify on other building sizes, capacities and trip-purpose mixes—not a claim
 or established algorithmic novelty. See
 [`docs/M7_COUNTERFLOW_CRITICALITY.md`](docs/M7_COUNTERFLOW_CRITICALITY.md).
 
+M7은 `capr_static` ablation으로 continuous reassignment만 분리하고 λ × directional-mixing surface를 스윕했습니다. 결과는 단순 “혼잡하면 reassign”보다 **traffic intensity × counterflow가 함께 높아질 때 stale assignment correction의 가치가 커진다**는 쪽을 지지합니다. Discovery threshold는 held-out grid에서 정확도가 낮아져 universal critical constant로는 기각했고, fuzzy operational hypothesis로 보존했습니다.
+
 ![M7 counterflow criticality discovery and held-out validation](docs/assets/m7-counterflow-criticality.svg)
 
-## First held-out learned-controller evidence: negative/mixed
+## First held-out learned-controller evidence: negative/mixed / 첫 held-out learned-controller 근거: 부정적·혼합 결과
 
 M5 deliberately uses disjoint data: the model trains on passenger seeds **1–6** across five base
 traffic regimes, while evaluation uses seeds **21–30**. `mixed_day` is excluded from training and
@@ -203,7 +228,9 @@ regimes regress on mean wait; the one mixed-day improvement is not enough to dec
 win. ETA/load/capacity/age/pre-positioning feature ablations do not overturn that conclusion.
 See `docs/M5_MODEL_CARD.md` and `evidence/m5-heldout-evaluation.json`.
 
-## Final 30-seed held-out release evidence
+M5 Dueling Double DQN은 일반적 우월성 gate를 통과하지 못했습니다. Held-out `mixed_day`에서는 clean candidate improvement가 있었지만 Morning/Lunch/Normal/Evening/Shock에서는 collective 대비 평균 wait이 악화했습니다. 이 negative/mixed result를 그대로 보존합니다.
+
+## Final 30-seed held-out release evidence / 최종 30-se드 held-out release 근거
 
 M6 keeps the exact retrained M5 checkpoint fixed and expands the release evaluation to **30 disjoint
 held-out passenger seeds (21–50)**. The overall conclusion is unchanged: CAPR is a clean candidate
@@ -221,10 +248,14 @@ tail/fairness/energy vetoes**, not “always CAPR” and not “always RL.” Se
 `docs/M6_RESEARCH_REPORT.md` for the architecture, evidence interpretation, external references and
 limitations, and `docs/M6_EVIDENCE_SUMMARY.md` for tables generated directly from committed JSON.
 
-## Run locally
+M6는 동일 fixed checkpoint를 유지한 채 passenger seed 21–50으로 held-out evaluation을 확장했고 결론은 유지되었습니다. 가장 강하게 지지되는 운영 규칙은 “always CAPR”이나 “always RL”이 아니라 **regime-gated predictive intervention + tail/fairness/energy veto**입니다.
+
+## Run locally / 로컬 실행
 
 Python 3.11+ is enough to run the committed production workbench. Node is only required when
 changing or rebuilding the React frontend.
+
+Committed production workbench 실행에는 Python 3.11+이면 충분하고, React frontend를 수정하거나 다시 빌드할 때만 Node가 필요합니다.
 
 ```bash
 python -m app.server --port 4173
@@ -277,7 +308,7 @@ already-running instance. Intentional visual-baseline updates use `npm run test:
 The matrix command emits a self-describing JSON artifact plus `*.runs.csv` and `*.summary.csv`.
 Artifacts explicitly record a zero-second warm-up and the measurement window used by the run.
 
-## Project status
+## Project status / 프로젝트 상태
 
 **M0 through M8 are implemented in the repository.** The research simulator, 30-seed evidence,
 negative/mixed learned-controller result and M7 falsification evidence are preserved; M8 adds the
@@ -290,13 +321,17 @@ Chromium/API QA must be run against the exact M8 commit before that claim is mad
 `docs/ROADMAP.md` remains the canonical milestone record and `AGENTS.md` defines the continuation
 contract.
 
-## Methodology references
+현재 M0–M8이 저장소에 구현되어 있으며 simulator core, 30-seed evidence, negative/mixed RL result, M7 falsification evidence를 유지한 채 M8 Decision Intelligence Product Workbench를 추가했습니다. `docs/ROADMAP.md`가 milestone 기준 문서이고 `AGENTS.md`가 후속 작업 contract입니다.
+
+## Methodology references / 방법론 참고자료
 
 The modeling plan is informed by ISO 8100-32 traffic-planning concepts, CIBSE Guide D lift traffic
 simulation/control topics, and current elevator group-control research. This project does **not**
 claim formal standards compliance. See `docs/MODELING_PROTOCOL.md` for scope and limitations.
 
-## License
+ISO 8100-32 traffic-planning concept, CIBSE Guide D lift traffic simulation/control topic, elevator group-control research를 참고하지만 formal standards compliance를 주장하지 않습니다. 범위와 한계는 `docs/MODELING_PROTOCOL.md`에 기록합니다.
+
+## License / 라이선스
 
 MIT, unless a later dependency or imported dataset requires a narrower notice.
 

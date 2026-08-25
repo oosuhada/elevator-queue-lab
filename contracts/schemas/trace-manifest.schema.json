@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elevator-queue-lab.local/contracts/trace-manifest.schema.json",
+  "title": "Elevator Queue Lab Passenger Trace Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "artifact_version",
+    "generator_version",
+    "seed",
+    "scenario",
+    "building_configuration",
+    "traffic_contract",
+    "duration_seconds",
+    "sha256",
+    "identity_sha256",
+    "created_at",
+    "source"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "elevator-queue-lab.trace-manifest.v1"
+    },
+    "artifact_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "scenario": {
+      "type": "string",
+      "minLength": 1
+    },
+    "building_configuration": {
+      "type": "object"
+    },
+    "traffic_contract": {
+      "type": "string",
+      "minLength": 1
+    },
+    "duration_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identity_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

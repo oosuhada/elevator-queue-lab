@@ -333,6 +333,10 @@ The production contract remains:
 python3 -m app.server --port 4173
 ```
 
+The runtime requires Python 3.11 or newer. The macOS launchd installer validates that requirement
+and prefers a supported Homebrew Python before the system `python3`, because an SSH session on the
+deployment Mac can otherwise resolve the older Command Line Tools Python first.
+
 The server continues to serve `web/` and the API from one process. M8 therefore does not require a
 Node runtime on the deployed Mac mini once `web/` has been built and committed. The existing
 `deploy/` service/proxy structure can continue to target the same Python command and port.

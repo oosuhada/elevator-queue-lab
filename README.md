@@ -250,79 +250,6 @@ limitations, and `docs/M6_EVIDENCE_SUMMARY.md` for tables generated directly fro
 
 M6는 동일 fixed checkpoint를 유지한 채 passenger seed 21–50으로 held-out evaluation을 확장했고 결론은 유지되었습니다. 가장 강하게 지지되는 운영 규칙은 “always CAPR”이나 “always RL”이 아니라 **regime-gated predictive intervention + tail/fairness/energy veto**입니다.
 
-## Run locally / 로컬 실행
-
-Python 3.11+ is enough to run the committed production workbench. Node is only required when
-changing or rebuilding the React frontend.
-
-Committed production workbench 실행에는 Python 3.11+이면 충분하고, React frontend를 수정하거나 다시 빌드할 때만 Node가 필요합니다.
-
-```bash
-python -m app.server --port 4173
-```
-
-Open `http://127.0.0.1:4173`. The UI can switch traffic regime, policy, simulation speed and
-conventional versus destination-control call input, save and scrub replay, inspect dispatch
-decisions, browse run objects and Decision Trace, query deterministic explanations and inspect
-committed M3/M5/M7 evidence.
-
-Frontend contributor gates:
-
-```bash
-npm ci --prefix frontend
-npm run typecheck --prefix frontend
-npm test --prefix frontend
-npm run build --prefix frontend
-```
-
-Run validation and evidence generation:
-
-```bash
-python -m unittest discover -s tests -v
-python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json
-python scripts/generate_trace.py --scenario evening --seconds 600 --seed 7 --output /tmp/evening-trace.json --package-dir /tmp/evening-trace-package
-python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3
-python scripts/run_experiment.py --scenario evening --seconds 600 --seeds 3 --control-mode destination
-python scripts/run_experiment.py --matrix --seconds 180 --seeds 30 --output evidence/m3-evidence.json
-python scripts/check_regression_baseline.py evidence/m3-evidence.json
-python scripts/run_m5_training.py
-python scripts/run_m6_evaluation.py
-python scripts/generate_m6_assets.py
-python scripts/audit_release.py
-```
-
-For browser/API visual verification:
-
-```bash
-npm ci
-npm ci --prefix frontend
-npm run frontend:build
-npx playwright install chromium
-npm run test:e2e
-npm run capture:showcase
-```
-
-Playwright starts the production Python server automatically unless `BASE_URL` points at an
-already-running instance. Intentional visual-baseline updates use `npm run test:e2e:update`.
-
-The matrix command emits a self-describing JSON artifact plus `*.runs.csv` and `*.summary.csv`.
-Artifacts explicitly record a zero-second warm-up and the measurement window used by the run.
-
-## Project status / 프로젝트 상태
-
-**M0 through M8 are implemented in the repository.** The research simulator, 30-seed evidence,
-negative/mixed learned-controller result and M7 falsification evidence are preserved; M8 adds the
-typed decision-intelligence product layer without rewriting the simulator core. See
-`docs/M8_PRODUCT_WORKBENCH.md` for the architecture and migration contract.
-
-The existing public Mac mini demo remains at `https://elevator.oosu.dev/`. A local or PR M8 result
-is not treated as proof that the public instance has been upgraded: deployment and remote
-Chromium/API QA must be run against the exact M8 commit before that claim is made.
-`docs/ROADMAP.md` remains the canonical milestone record and `AGENTS.md` defines the continuation
-contract.
-
-현재 M0–M8이 저장소에 구현되어 있으며 simulator core, 30-seed evidence, negative/mixed RL result, M7 falsification evidence를 유지한 채 M8 Decision Intelligence Product Workbench를 추가했습니다. `docs/ROADMAP.md`가 milestone 기준 문서이고 `AGENTS.md`가 후속 작업 contract입니다.
-
 ## Methodology references / 방법론 참고자료
 
 The modeling plan is informed by ISO 8100-32 traffic-planning concepts, CIBSE Guide D lift traffic
@@ -330,10 +257,6 @@ simulation/control topics, and current elevator group-control research. This pro
 claim formal standards compliance. See `docs/MODELING_PROTOCOL.md` for scope and limitations.
 
 ISO 8100-32 traffic-planning concept, CIBSE Guide D lift traffic simulation/control topic, elevator group-control research를 참고하지만 formal standards compliance를 주장하지 않습니다. 범위와 한계는 `docs/MODELING_PROTOCOL.md`에 기록합니다.
-
-## License / 라이선스
-
-MIT, unless a later dependency or imported dataset requires a narrower notice.
 
 ## Architecture & Topics / 아키텍처 및 주제
 
@@ -344,4 +267,4 @@ MIT, unless a later dependency or imported dataset requires a narrower notice.
 [`control-systems`](https://github.com/topics/control-systems) · [`dispatch-algorithm`](https://github.com/topics/dispatch-algorithm) · [`elevator`](https://github.com/topics/elevator) · [`elevator-control`](https://github.com/topics/elevator-control) · [`gymnasium`](https://github.com/topics/gymnasium) · [`machine-learning`](https://github.com/topics/machine-learning) · [`operations-research`](https://github.com/topics/operations-research) · [`optimization`](https://github.com/topics/optimization) · [`queueing-theory`](https://github.com/topics/queueing-theory) · [`reinforcement-learning`](https://github.com/topics/reinforcement-learning) · [`research-tool`](https://github.com/topics/research-tool) · [`simulation`](https://github.com/topics/simulation) · [`traffic-simulation`](https://github.com/topics/traffic-simulation)
 
 **Implementation stack / 구현 스택**<br>
-[`python`](https://github.com/topics/python) · [`react`](https://github.com/topics/react) · [`typescript`](https://github.com/topics/typescript) · [`playwright`](https://github.com/topics/playwright)
+[`python`](https://github.com/topics/python) · [`react`](https://github.com/topics/react) · [`typescript`](https://github.com/topics/typescript) · [`react-three-fiber`](https://github.com/topics/react-three-fiber) · [`threejs`](https://github.com/topics/threejs) · [`gymnasium`](https://github.com/topics/gymnasium) · [`vite`](https://github.com/topics/vite) · [`playwright`](https://github.com/topics/playwright)

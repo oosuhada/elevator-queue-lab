@@ -11,6 +11,9 @@ coverage/
 .DS_Store
 Thumbs.db
 *.log
+*.tsbuildinfo
 experiment-*.json
 trace-*.json
+frontend/vite.config.js
+frontend/vite.config.d.ts
 

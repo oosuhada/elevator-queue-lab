@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import threading
 import unittest
 import urllib.request
@@ -9,6 +10,24 @@ from app.server import Handler, REPLAY_SCHEMA, SimulationRunner
 
 
 class ServerRunnerTests(unittest.TestCase):
+    def test_reset_paused_starts_from_a_deterministic_zero_second_frame(self) -> None:
+        snapshot = self.runner.control(
+            {
+                "action": "reset_paused",
+                "scenario": "lunch",
+                "policy": "capr",
+                "speed": 120,
+            }
+        )
+        self.assertFalse(snapshot["running"])
+        self.assertEqual(snapshot["sim_time"], 0)
+        self.assertEqual(snapshot["replay_frames"], 1)
+
+        stepped = self.runner.control({"action": "step"})
+        self.assertFalse(stepped["running"])
+        self.assertEqual(stepped["sim_time"], 1)
+        self.assertEqual(stepped["replay_frames"], 2)
+
     def setUp(self) -> None:
         self.runner = SimulationRunner()
         self.runner.running = False
@@ -92,7 +111,12 @@ class ServerRunnerTests(unittest.TestCase):
         thread.start()
         try:
             base_url = f"http://127.0.0.1:{server.server_port}"
-            for path in ("/", "/app.js", "/styles.css"):
+            with urllib.request.urlopen(base_url + "/") as response:
+                self.assertEqual("no-store", response.headers.get("Cache-Control"))
+                html = response.read().decode("utf-8")
+            built_assets = re.findall(r'(?:src|href)="(/assets/[^"]+)"', html)
+            self.assertGreaterEqual(len(built_assets), 2)
+            for path in built_assets:
                 with urllib.request.urlopen(base_url + path) as response:
                     self.assertEqual("no-store", response.headers.get("Cache-Control"))
         finally:

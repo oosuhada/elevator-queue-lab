@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { DataPill } from "../common/DataPill";
 
 
@@ -45,29 +45,8 @@ export function ProductShell({
   status,
   children,
 }: ProductShellProps) {
-  const [railExpanded, setRailExpanded] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("eql.navigationRailExpanded");
-      return stored === null ? true : stored === "true";
-    } catch {
-      return true;
-    }
-  });
-
-  function toggleRail() {
-    setRailExpanded((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem("eql.navigationRailExpanded", String(next));
-      } catch {
-        // Persistence is optional; navigation remains functional without storage access.
-      }
-      return next;
-    });
-  }
-
   return (
-    <div className={railExpanded ? "product-shell rail-expanded" : "product-shell rail-collapsed"}>
+    <div className="product-shell">
       <header className="global-header">
         <button className="brand-mark" type="button" onClick={() => onNavigate("live")} aria-label="Open Live Operations">
           EQL
@@ -83,17 +62,7 @@ export function ProductShell({
         </div>
       </header>
 
-      <aside className="product-rail" aria-label="Workbench navigation" data-expanded={railExpanded ? "true" : "false"}>
-        <button
-          className="rail-toggle"
-          type="button"
-          aria-label={railExpanded ? "Collapse navigation" : "Expand navigation"}
-          aria-expanded={railExpanded}
-          onClick={toggleRail}
-        >
-          <span aria-hidden="true">{railExpanded ? "←" : "→"}</span>
-          <small>{railExpanded ? "Collapse" : "Expand"}</small>
-        </button>
+      <aside className="product-rail" aria-label="Workbench navigation">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.key}

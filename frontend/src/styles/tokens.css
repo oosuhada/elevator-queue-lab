@@ -38,9 +38,7 @@
   --evidence: #3b6977;
   --focus: #005d65;
   --header-height: 58px;
-  --rail-width-expanded: 176px;
-  --rail-width-collapsed: 68px;
-  --rail-width: var(--rail-width-expanded);
+  --rail-width: 176px;
   --status-height: 30px;
   color-scheme: light;
 }

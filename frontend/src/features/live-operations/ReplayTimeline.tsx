@@ -86,7 +86,7 @@ export function ReplayTimeline({ replay, replayMode, replayIndex, onReplayIndex,
     <section className="replay-panel physical-timeline" aria-label="Deterministic replay timeline">
       <header className="section-heading">
         <div><span>Physical timeline</span><strong>Deterministic replay instrument</strong></div>
-        <span id="replay-status">{replay?.source === "saved_run" ? "saved run" : "not saved"}</span>
+        <span id="replay-status">{replay?.source === "artifact_replay" ? "recorded engine run" : replay?.source === "saved_run" ? "saved run" : "not saved"}</span>
       </header>
       <div className="timeline-actions">
         <button id="save-replay" className="secondary-button" type="button" onClick={() => void onSave()}>Save run</button>

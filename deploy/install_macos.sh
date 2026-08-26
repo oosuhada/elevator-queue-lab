@@ -109,11 +109,23 @@ EOF
 
 plutil -lint "$PLIST"
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
-launchctl bootstrap "$DOMAIN" "$PLIST"
+BOOTSTRAPPED=false
+for _ in {1..20}; do
+  if launchctl bootstrap "$DOMAIN" "$PLIST" 2>/dev/null; then
+    BOOTSTRAPPED=true
+    break
+  fi
+  sleep 0.25
+done
+if [ "$BOOTSTRAPPED" != true ]; then
+  echo "Unable to bootstrap $LABEL after waiting for launchd to release the old service." >&2
+  launchctl bootstrap "$DOMAIN" "$PLIST"
+  exit 1
+fi
 launchctl enable "$DOMAIN/$LABEL"
 launchctl kickstart -k "$DOMAIN/$LABEL"
 
-for _ in {1..40}; do
+for _ in {1..240}; do
   if curl --fail --silent "http://127.0.0.1:$PORT/api/health" >/dev/null; then
     echo "Elevator Queue Lab launchd service is healthy."
     echo "Local URL: http://127.0.0.1:$PORT/"

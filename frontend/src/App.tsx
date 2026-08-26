@@ -194,11 +194,11 @@ export default function App() {
       inspectorOpen={inspectorOpen}
       onToggleInspector={() => setInspectorOpen((value) => !value)}
       status={{
-        mode: data.snapshot.running ? "LIVE" : "PAUSED",
+        mode: data.snapshot.runtime_mode === "artifact_replay" ? (data.snapshot.running ? "REPLAY" : "PAUSED") : data.snapshot.running ? "LIVE" : "PAUSED",
         scenario: data.snapshot.scenario,
         policy: data.snapshot.policy,
         runId: data.run.run_id,
-        provenance: data.run.trace_sha256 ? "materialized passenger trace" : "seeded demand generator",
+        provenance: data.snapshot.runtime_mode === "artifact_replay" ? "recorded deterministic engine replay" : data.run.trace_sha256 ? "materialized passenger trace" : "seeded demand generator",
       }}
     >
       {error ? <WorkbenchState kind="error" title="Latest action failed">{error}</WorkbenchState> : null}

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import re
+import tempfile
 import threading
 import unittest
 import urllib.request
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 from app.server import Handler, REPLAY_SCHEMA, SimulationRunner
 
@@ -75,6 +78,42 @@ class ServerRunnerTests(unittest.TestCase):
         )
         self.assertNotIn("history", frame)
         self.assertNotIn("audit", frame)
+
+    def test_artifact_replay_has_no_background_simulation_thread(self) -> None:
+        self.runner.control({"action": "step"})
+        payload = self.runner.replay()
+        payload["source"] = "artifact_replay"
+        payload["default_speed"] = 5
+        payload["run_id"] = "public-demo-test"
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_path = Path(directory) / "replay.json"
+            artifact_path.write_text(json.dumps(payload), encoding="utf-8")
+            replay_runner = SimulationRunner(replay_artifact=artifact_path)
+            try:
+                self.assertIsNone(replay_runner.thread)
+                snapshot = replay_runner.control({"action": "pause"})
+                self.assertEqual("artifact_replay", snapshot["runtime_mode"])
+                self.assertEqual("public-demo-test", replay_runner.run_id)
+                self.assertEqual(len(payload["frames"]), snapshot["replay_frames"])
+                stepped = replay_runner.control({"action": "step"})
+                self.assertFalse(stepped["running"])
+                self.assertEqual(1, stepped["playback_index"])
+                self.assertGreaterEqual(len(stepped["history"]), 1)
+                self.assertEqual("artifact_replay", replay_runner.replay()["source"])
+            finally:
+                replay_runner.closed.set()
+
+    def test_artifact_replay_rejects_runtime_scenario_changes(self) -> None:
+        payload = self.runner.replay()
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_path = Path(directory) / "replay.json"
+            artifact_path.write_text(json.dumps(payload), encoding="utf-8")
+            replay_runner = SimulationRunner(replay_artifact=artifact_path)
+            try:
+                with self.assertRaisesRegex(ValueError, "replays one recorded scenario"):
+                    replay_runner.control({"action": "update", "scenario": "evening"})
+            finally:
+                replay_runner.closed.set()
 
     def test_experiment_api_is_backed_by_checked_in_m3_baseline(self) -> None:
         payload = self.runner.experiment()

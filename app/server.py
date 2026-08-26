@@ -34,8 +34,25 @@ REPLAY_SCHEMA = "elevator-queue-lab.replay.v1"
 REPLAY_LIMIT = 600
 
 
+def compact_replay_frame(simulation: ElevatorSimulation) -> dict[str, Any]:
+    source = simulation.snapshot()
+    return {
+        "scenario": source["scenario"],
+        "policy": source["policy"],
+        "sim_time": source["sim_time"],
+        "clock": source["clock"],
+        "metrics": source["metrics"],
+        "elevators": source["elevators"],
+        "queues": source["queues"],
+        "calls": source["calls"],
+        "event_tail": source["event_tail"][-12:],
+        "decision_tail": source["decision_tail"][-4:],
+        "simulation_config": source["simulation_config"],
+    }
+
+
 class SimulationRunner:
-    def __init__(self) -> None:
+    def __init__(self, replay_artifact: Path | None = None) -> None:
         self.lock = threading.RLock()
         self.running = True
         self.speed = 20
@@ -46,11 +63,80 @@ class SimulationRunner:
         self.simulation = self._new_simulation()
         self.replay_frames: list[dict[str, Any]] = []
         self.saved_replay: dict[str, Any] | None = None
+        self.runtime_mode = "live_simulation"
+        self.replay_artifact = replay_artifact
+        self._artifact_anchor_index = 0
+        self._artifact_anchor_time = time.monotonic()
+        self._base_snapshot = self.simulation.snapshot()
         self._last_replay_second = -1
-        self._record_replay_frame(force=True)
         self.closed = threading.Event()
-        self.thread = threading.Thread(target=self._loop, daemon=True)
-        self.thread.start()
+        self.thread: threading.Thread | None = None
+        if replay_artifact is not None:
+            self._load_replay_artifact(replay_artifact)
+        else:
+            self._record_replay_frame(force=True)
+            self.thread = threading.Thread(target=self._loop, daemon=True)
+            self.thread.start()
+
+    def _load_replay_artifact(self, path: Path) -> None:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("schema") != REPLAY_SCHEMA:
+            raise ValueError(f"unsupported replay artifact schema: {payload.get('schema')}")
+        frames = payload.get("frames")
+        if not isinstance(frames, list) or not frames:
+            raise ValueError("replay artifact must contain at least one frame")
+        first = frames[0]
+        self.scenario = str(first["scenario"])
+        self.policy = str(first["policy"])
+        self.control_mode = str(first["simulation_config"]["control_mode"])
+        self.speed = max(1, min(120, int(payload.get("default_speed", 5))))
+        self.run_id = str(payload.get("run_id", self._new_run_id()))
+        self.simulation = self._new_simulation()
+        self._base_snapshot = self.simulation.snapshot()
+        self.replay_frames = frames
+        self.saved_replay = {**payload, "source": "artifact_replay"}
+        self.runtime_mode = "artifact_replay"
+        self._last_replay_second = int(frames[-1]["sim_time"])
+
+    def _artifact_index(self) -> int:
+        if not self.replay_frames:
+            return 0
+        elapsed_frames = 0
+        if self.running:
+            elapsed_frames = int((time.monotonic() - self._artifact_anchor_time) * self.speed)
+        return (self._artifact_anchor_index + elapsed_frames) % len(self.replay_frames)
+
+    def _anchor_artifact(self, index: int | None = None) -> None:
+        self._artifact_anchor_index = self._artifact_index() if index is None else index
+        self._artifact_anchor_time = time.monotonic()
+
+    def _artifact_snapshot(self) -> dict[str, Any]:
+        index = self._artifact_index()
+        result = copy.deepcopy(self._base_snapshot)
+        result.update(copy.deepcopy(self.replay_frames[index]))
+        history_frames = self.replay_frames[: index + 1]
+        result["history"] = [
+            {
+                "sim_time": frame["sim_time"],
+                "avg_wait": frame["metrics"]["avg_wait"],
+                "p95_wait": frame["metrics"]["p95_wait"],
+                "avg_queue": frame["metrics"]["avg_queue"],
+            }
+            for frame in history_frames
+            if int(frame["sim_time"]) % 15 == 0
+        ]
+        result["audit"] = {
+            **result.get("audit", {}),
+            "runtime_mode": self.runtime_mode,
+            "replay_source": str(self.replay_artifact),
+        }
+        result["running"] = self.running
+        result["speed"] = self.speed
+        result["replay_frames"] = len(self.replay_frames)
+        result["saved_replay_available"] = True
+        result["runtime_mode"] = self.runtime_mode
+        result["playback_index"] = index
+        return result
 
     def _new_run_id(self) -> str:
         return f"run-{uuid.uuid4().hex[:12]}"
@@ -73,20 +159,7 @@ class SimulationRunner:
                 time.sleep(0.05)
 
     def _compact_replay_frame(self) -> dict[str, Any]:
-        source = self.simulation.snapshot()
-        return {
-            "scenario": source["scenario"],
-            "policy": source["policy"],
-            "sim_time": source["sim_time"],
-            "clock": source["clock"],
-            "metrics": source["metrics"],
-            "elevators": source["elevators"],
-            "queues": source["queues"],
-            "calls": source["calls"],
-            "event_tail": source["event_tail"][-12:],
-            "decision_tail": source["decision_tail"][-4:],
-            "simulation_config": source["simulation_config"],
-        }
+        return compact_replay_frame(self.simulation)
 
     def _record_replay_frame(self, *, force: bool = False) -> None:
         second = int(self.simulation.sim_time)
@@ -99,11 +172,14 @@ class SimulationRunner:
 
     def snapshot(self) -> dict[str, Any]:
         with self.lock:
+            if self.runtime_mode == "artifact_replay":
+                return self._artifact_snapshot()
             result = self.simulation.snapshot()
             result["running"] = self.running
             result["speed"] = self.speed
             result["replay_frames"] = len(self.replay_frames)
             result["saved_replay_available"] = self.saved_replay is not None
+            result["runtime_mode"] = self.runtime_mode
             return result
 
     def control(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -112,6 +188,33 @@ class SimulationRunner:
             next_scenario = str(payload.get("scenario", self.scenario))
             next_policy = str(payload.get("policy", self.policy))
             next_control_mode = str(payload.get("control_mode", self.control_mode))
+            if self.runtime_mode == "artifact_replay":
+                if (
+                    next_scenario != self.scenario
+                    or next_policy != self.policy
+                    or next_control_mode != self.control_mode
+                ):
+                    raise ValueError(
+                        "the public demo replays one recorded scenario; run the simulator locally "
+                        "to change scenario, policy, or control mode"
+                    )
+                self._anchor_artifact()
+                if "speed" in payload:
+                    self.speed = max(1, min(120, int(payload["speed"])))
+                if action == "pause":
+                    self.running = False
+                elif action in {"start", "update"}:
+                    self.running = True
+                elif action in {"reset", "reset_paused"}:
+                    self._anchor_artifact(0)
+                    self.running = action == "reset"
+                elif action == "step":
+                    self._anchor_artifact((self._artifact_anchor_index + 1) % len(self.replay_frames))
+                    self.running = False
+                else:
+                    raise ValueError("unsupported artifact replay action")
+                self._artifact_anchor_time = time.monotonic()
+                return self._artifact_snapshot()
             if next_control_mode not in {"conventional", "destination"}:
                 raise ValueError("control_mode must be conventional or destination")
             if "speed" in payload:
@@ -143,6 +246,8 @@ class SimulationRunner:
 
     def replay(self) -> dict[str, Any]:
         with self.lock:
+            if self.runtime_mode == "artifact_replay" and self.saved_replay is not None:
+                return copy.deepcopy(self.saved_replay)
             if self.saved_replay is not None:
                 return copy.deepcopy(self.saved_replay)
             return self._build_replay_payload(self.replay_frames, source="live_buffer")
@@ -150,6 +255,10 @@ class SimulationRunner:
     def replay_control(self, payload: dict[str, Any]) -> dict[str, Any]:
         action = str(payload.get("action", "save"))
         with self.lock:
+            if self.runtime_mode == "artifact_replay":
+                if action != "save":
+                    raise ValueError("the deployed replay artifact is read-only")
+                return self.replay()
             if action == "save":
                 self.saved_replay = self._build_replay_payload(
                     copy.deepcopy(self.replay_frames),
@@ -236,6 +345,7 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "schema": "elevator-queue-lab.health.v1",
                     "status": "ok",
+                    "runtime_mode": self.runner.runtime_mode,
                 }
             )
         if parsed.path == "/api/snapshot":
@@ -345,8 +455,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4173)
+    parser.add_argument("--replay-artifact", type=Path)
     args = parser.parse_args()
-    runner = SimulationRunner()
+    runner = SimulationRunner(replay_artifact=args.replay_artifact)
     handler = type("ElevatorQueueHandler", (Handler,), {"runner": runner})
     server = ThreadingHTTPServer((args.host, args.port), handler)
     print(f"Elevator Queue Lab running at http://{args.host}:{args.port}")
@@ -354,7 +465,8 @@ def main() -> None:
         server.serve_forever()
     finally:
         runner.closed.set()
-        runner.thread.join(timeout=1)
+        if runner.thread is not None:
+            runner.thread.join(timeout=1)
         server.server_close()
 
 

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT="${PORT:-4174}"
+REPLAY_ARTIFACT="${REPLAY_ARTIFACT:-$ROOT/evidence/public-demo-replay.json}"
 LABEL="dev.oosu.elevator-queue-lab"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/elevator-queue-lab"
@@ -47,6 +48,12 @@ select_python() {
 
 PYTHON_BIN="$(select_python)"
 
+if [ ! -f "$REPLAY_ARTIFACT" ]; then
+  echo "Public replay artifact is missing: $REPLAY_ARTIFACT" >&2
+  echo "Run: python scripts/generate_public_demo_replay.py" >&2
+  exit 1
+fi
+
 mkdir -p "$(dirname "$PLIST")" "$LOG_DIR"
 
 xml_escape() {
@@ -60,6 +67,7 @@ PY
 ROOT_XML="$(xml_escape "$ROOT")"
 PYTHON_XML="$(xml_escape "$PYTHON_BIN")"
 PORT_XML="$(xml_escape "$PORT")"
+REPLAY_XML="$(xml_escape "$REPLAY_ARTIFACT")"
 OUT_XML="$(xml_escape "$LOG_DIR/server.out.log")"
 ERR_XML="$(xml_escape "$LOG_DIR/server.err.log")"
 
@@ -80,6 +88,8 @@ cat > "$PLIST" <<EOF
     <string>127.0.0.1</string>
     <string>--port</string>
     <string>$PORT_XML</string>
+    <string>--replay-artifact</string>
+    <string>$REPLAY_XML</string>
   </array>
   <key>WorkingDirectory</key>
   <string>$ROOT_XML</string>

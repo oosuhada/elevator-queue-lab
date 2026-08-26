@@ -118,7 +118,7 @@ export function LiveOperations({ liveSnapshot, onSaveReplay, onControl, onInspec
   return (
     <div className="live-workbench">
       <div className="live-status-row">
-        <div id="live-state" className={`live-state ${replayMode ? "replay" : liveSnapshot.running ? "live" : "paused"}`}><span>{replayMode ? "REPLAY MODE" : liveSnapshot.running ? "LIVE SIMULATION" : "PAUSED"}</span></div>
+        <div id="live-state" className={`live-state ${replayMode || liveSnapshot.runtime_mode === "artifact_replay" ? "replay" : liveSnapshot.running ? "live" : "paused"}`}><span>{replayMode || liveSnapshot.runtime_mode === "artifact_replay" ? "RECORDED REPLAY" : liveSnapshot.running ? "LIVE SIMULATION" : "PAUSED"}</span></div>
         <strong id="clock">{visibleSnapshot.clock}</strong>
         <span id="elapsed">T+{Math.floor(visibleSnapshot.sim_time / 60).toString().padStart(2, "0")}:{(visibleSnapshot.sim_time % 60).toString().padStart(2, "0")}</span>
         <span className="regime-readout">{visibleSnapshot.scenario} / {visibleSnapshot.policy}</span>

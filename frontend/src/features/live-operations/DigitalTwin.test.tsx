@@ -84,6 +84,7 @@ function snapshotFixture(): Snapshot {
     speed: 20,
     replay_frames: 20,
     saved_replay_available: false,
+    runtime_mode: "live_simulation",
   };
 }
 

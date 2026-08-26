@@ -136,11 +136,13 @@ export interface Snapshot {
   speed: number;
   replay_frames: number;
   saved_replay_available: boolean;
+  runtime_mode: "live_simulation" | "artifact_replay";
+  playback_index?: number;
 }
 
 export interface ReplayPayload {
   schema: string;
-  source: "saved_run" | "live_buffer";
+  source: "saved_run" | "live_buffer" | "artifact_replay";
   scenario: ScenarioName;
   policy: PolicyName;
   control_mode: string;

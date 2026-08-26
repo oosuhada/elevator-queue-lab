@@ -8,6 +8,7 @@ interface LiveControlsProps {
 }
 
 export function LiveControls({ snapshot, disabled = false, onControl }: LiveControlsProps) {
+  const recorded = snapshot.runtime_mode === "artifact_replay";
   async function update(selectors: Partial<{ scenario: ScenarioName; policy: PolicyName; control_mode: string; speed: number }>) {
     await onControl({ action: "update", ...selectors });
   }
@@ -16,7 +17,7 @@ export function LiveControls({ snapshot, disabled = false, onControl }: LiveCont
     <div className="live-controls" aria-label="Simulation controls">
       <label>
         Scenario
-        <select id="scenario" disabled={disabled} value={snapshot.scenario} onChange={(event) => update({ scenario: event.target.value as ScenarioName })}>
+        <select id="scenario" disabled={disabled || recorded} value={snapshot.scenario} onChange={(event) => update({ scenario: event.target.value as ScenarioName })}>
           <option value="morning">Morning</option>
           <option value="lunch">Lunch</option>
           <option value="normal">Normal</option>
@@ -27,7 +28,7 @@ export function LiveControls({ snapshot, disabled = false, onControl }: LiveCont
       </label>
       <label>
         Policy
-        <select id="policy" disabled={disabled} value={snapshot.policy} onChange={(event) => update({ policy: event.target.value as PolicyName })}>
+        <select id="policy" disabled={disabled || recorded} value={snapshot.policy} onChange={(event) => update({ policy: event.target.value as PolicyName })}>
           <option value="legacy_sticky">Legacy sticky</option>
           <option value="nearest_car">Nearest car</option>
           <option value="collective">Collective</option>
@@ -37,7 +38,7 @@ export function LiveControls({ snapshot, disabled = false, onControl }: LiveCont
       </label>
       <label>
         Control
-        <select id="control-mode" disabled={disabled} value={snapshot.simulation_config.control_mode} onChange={(event) => update({ control_mode: event.target.value })}>
+        <select id="control-mode" disabled={disabled || recorded} value={snapshot.simulation_config.control_mode} onChange={(event) => update({ control_mode: event.target.value })}>
           <option value="conventional">Conventional</option>
           <option value="destination">Destination</option>
         </select>
@@ -52,8 +53,9 @@ export function LiveControls({ snapshot, disabled = false, onControl }: LiveCont
         {snapshot.running ? "Pause" : "Resume"}
       </button>
       <button id="reset" className="secondary-button" disabled={disabled} type="button" onClick={() => onControl({ action: "reset" })}>
-        Reset run
+        {recorded ? "Restart replay" : "Reset run"}
       </button>
+      {recorded ? <span className="data-pill">Recorded engine replay</span> : null}
     </div>
   );
 }

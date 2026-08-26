@@ -84,6 +84,7 @@ export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [inspectionSnapshot, setInspectionSnapshot] = useState<Snapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,12 +162,13 @@ export default function App() {
   }
 
   const copy = TITLES[active];
-  const latestDecision = data.snapshot.decision_tail.at(-1);
+  const latestDecision = (inspectionSnapshot ?? data.snapshot).decision_tail.at(-1);
+  const decisionSnapshot = inspectionSnapshot ?? data.snapshot;
   const toolbar = active === "live" ? <LiveControls snapshot={data.snapshot} onControl={handleControl} /> : undefined;
-  const inspector = active === "live" ? <DecisionInspector decision={latestDecision} /> : undefined;
+  const inspector = active === "live" ? <DecisionInspector decision={latestDecision} snapshot={decisionSnapshot} /> : undefined;
   let content: React.ReactNode;
   if (active === "live") {
-    content = <LiveOperations liveSnapshot={data.snapshot} onControl={handleControl} onSaveReplay={api.saveReplay} />;
+    content = <LiveOperations liveSnapshot={data.snapshot} onControl={handleControl} onSaveReplay={api.saveReplay} onInspectionSnapshotChange={setInspectionSnapshot} />;
   } else if (active === "runs") {
     content = <RunsWorkbench run={data.run} artifacts={data.artifacts} />;
   } else if (active === "dispatch") {

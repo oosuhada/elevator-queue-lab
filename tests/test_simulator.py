@@ -36,6 +36,23 @@ class SimulationTests(unittest.TestCase):
         self.assertEqual(3, sum(car.bank == "low" for car in simulation.elevators))
         self.assertEqual(3, sum(car.bank == "high" for car in simulation.elevators))
 
+    def test_dispatch_evidence_exposes_exact_score_decomposition(self) -> None:
+        simulation = ElevatorSimulation("lunch", "capr", seed=7)
+        simulation.run(30)
+        self.assertTrue(simulation.decision_history)
+        decision = simulation.decision_history[-1]
+        candidates = decision["candidates"]
+        self.assertTrue(candidates)
+        for candidate in candidates:
+            self.assertIn("score_terms", candidate)
+            self.assertIn("age_seconds", candidate)
+            self.assertIn("capacity_shortfall", candidate)
+            self.assertAlmostEqual(
+                float(candidate["score"]),
+                sum(float(value) for value in candidate["score_terms"].values()),
+                places=3,
+            )
+
     def test_bank_trip_constraints(self) -> None:
         simulation = ElevatorSimulation(seed=1)
         low = next(car for car in simulation.elevators if car.bank == "low")

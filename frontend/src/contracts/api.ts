@@ -53,6 +53,11 @@ export interface CandidateEvaluation {
   score: number;
   feasible: boolean;
   reason: string;
+  age_seconds?: number;
+  capacity_shortfall?: number;
+  direction_mismatch?: boolean;
+  load_ratio?: number;
+  score_terms?: Record<string, number>;
 }
 
 export interface DispatchDecision {

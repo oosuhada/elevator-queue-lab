@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Snapshot } from "../../contracts/api";
 import { DigitalTwin } from "./DigitalTwin";
@@ -96,5 +96,8 @@ describe("DigitalTwin", () => {
     expect(container.querySelectorAll("#assignment-overlay line")).toHaveLength(1);
     expect(container.querySelector('[data-car-id="L1"]')).toHaveAttribute("data-capacity", "16");
     expect(container.querySelector('[data-car-id="H3"]')).toHaveAttribute("data-floor", "6");
+    expect(screen.getByRole("button", { name: "Section" })).toHaveClass("is-active");
+    expect(screen.getByRole("button", { name: "2.5D study" })).toBeDisabled();
+    expect(screen.getByText(/authoritative 2D section remains fully available/i)).toBeInTheDocument();
   });
 });
